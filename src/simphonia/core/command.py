@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 Callback = Callable[..., Any]
@@ -11,3 +11,6 @@ class Command:
     description: str
     callback: Callback
     bus_name: str
+    mcp: bool = False
+    mcp_description: str | None = None
+    mcp_params: dict[str, Any] | None = field(default=None)

@@ -13,14 +13,14 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 | # | Étape | Livrable |
 |---|---|---|
-| **#10** | `@command` étendu | `mcp=True`, `mcp_description`, `mcp_params` (JSONSchema riche) stockés sur `Command` |
+| ~~#10~~ | ~~`@command` étendu~~ | ✅ livré 2026-04-17 (voir `DONE`) |
 | **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
 | **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
 | **#13** | Validation startup | Cascade orpheline → fail | `mcp=True` sans `from_char` → fail |
 | **#14** | Façade MCP | Second serveur sur `MCP_PORT` (SDK officiel `mcp`), tools générés depuis registry, `from_char` injecté, sortie markdown |
 | **#15** | Smoke test E2E | Mock `memory/recall` + cascade `decay/after_recall`, validation via simcli + via client MCP |
 
-**Prochaine étape : #10** (`@command` étendu — extension du décorateur sans casser l'existant `system/help`, `system/ping`).
+**Prochaine étape : #11** (`@cascade` + `ShortCircuit` — décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry`).
 
 **Hors scope de ce bloc** : moteur de tour joueur, vrai memory_service / knowledge_service (port Symphonie ultérieur), authentification MCP.
 
@@ -56,11 +56,20 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 - Chaîne d'appel cible : `LLM → simphonia (MCP) → memory_service → shadow_memory_service → response`
 - Prompt système à injecter dans chaque LLM joueur : indication d'usage du tool, contrainte de ne pas inventer d'infos sur les autres
 
-### H5 — Spécification `shadow_memory_service`
+### H5 — Implémentation `shadow_memory_service` + "psy"
 
-- Clarifier le rôle (mentionné par l'utilisateur comme maillon post-`memory_service` dans la chaîne d'appel)
-- Définir interface, invariants, événements déclencheurs
-- Positionner vs `memory_service` : transformation ? enrichissement ? observation/trace ?
+Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle, chaîne d'exécution, opacité, deux casquettes du psy (runtime + production) sont actés.
+
+**Actions identifiées** :
+
+- **H5.a — Agent `psy`** : nouveau PNJ avec fiche + system prompt dédié, branché sur l'infra providers (OpenAI/Claude) avec config par perso + fallback. Dev/proto en gemma4. Préalable : `character_service` porté.
+- **H5.b — Collection shadow MongoDB** : spec du schéma d'entrée (point ouvert : calque `PerceptionEntry` avec catégorie spéciale vs schéma propre avec `intensity` / `source_event_id` / `last_reinforced_at`). Initialiser la collection + le process de sync mongo→chroma (collection dédiée, séparée de `knowledge`).
+- **H5.c — `shadow_memory_service`** : service dédié exposant deux fonctions — `shadow_before_call` (cascade `memory/recall` before, réécrit la query via un appel au psy) et `shadow_after_call` (cascade `memory/recall` after, 2e RAG sur la collection shadow + fusion). Dépend de #11/#12 (cascades) et de H5.a.
+- **H5.d — État "focus" unilatéral** : choisir la forme de stockage (poids vs typologie vs hybride), le déclencheur d'update (après événement notable), les règles de priorité multi-focus.
+- **H5.e — Garde-fous coût LLM** : skip quand aucun focus actif sur la cible, cache par hash de query, rate-limit par tour — à benchmarker une fois la chaîne complète en place.
+- **H5.f — Trigger de re-sync mongo→chroma** pendant le jeu : identifier l'événement déclencheur (fin d'exchange ? insert mongo ? commande explicite ?) et le câbler.
+
+**Préalables bloquants** : tickets #11 / #12 (cascades) et #14 (façade MCP) du bloc INFRA, plus H1 (modélisation) et le port de `character_service`.
 
 ### H6 — Moteur de tour de joueur (boucle agentique tool-use)
 
@@ -95,6 +104,26 @@ _(vide)_
 _(vide)_
 
 ## DONE
+
+### 2026-04-17 — Première brique `memory_service` + commande bus `memory/recall`
+
+- `src/simphonia/config.py` : `PROJECT_ROOT`, `CHROMA_DIR`, `COLLECTION_NAME="knowledge"`, `EMBEDDING_MODEL="paraphrase-multilingual-MiniLM-L12-v2"`, `DEFAULT_MEMORY_SLOTS=5`.
+- `src/simphonia/services/memory_service.py` : port simplifié du legacy Symphonie — `init` / `embed` / `recall` / `stats` + singleton `memory_service`. **Exclus** : sync MongoDB, push, reset, drop_*, format_*. Usage interne uniquement (pas de ré-export via `services/__init__.py`).
+- `src/simphonia/commands/memory.py` : `@command(bus="memory", code="recall")` avec signature `(from_char, context, top_k?, about?, participants?, factor?, max_distance?)`. **Pas de `mcp=True`** — commande locale uniquement pour l'instant. Délègue au singleton.
+- `src/simphonia/bootstrap.py` : appel `memory_service.init()` après `discover()`, avant `create_app()`. Fail-fast si init KO (modèle ~5s + 420 Mo RAM au startup, zéro cold-start ensuite).
+- `pyproject.toml` + `requirements.txt` : `chromadb>=0.5` et `sentence-transformers>=2.7` en runtime.
+- Validation : dispatch `memory/recall` via simcli sur la bdd `data/chromadb` pré-initialisée (1671 documents, 9 personnages) retourne les souvenirs triés par distance cosine avec metadata `about/category/activity/scene`.
+
+### 2026-04-17 — #10 `@command` étendu (attributs MCP)
+
+- `Command` (dataclass frozen) : ajout de `mcp: bool = False`, `mcp_description: str | None = None`, `mcp_params: dict[str, Any] | None = None`.
+- Décorateur `@command` : nouveaux kwargs `mcp`, `mcp_description`, `mcp_params` + validation decoration-time via `CommandContractError` :
+  - rejet si `mcp=False` mais champ MCP fourni (contrat incohérent)
+  - `mcp=True` exige `mcp_description` non vide
+  - `mcp=True` exige `mcp_params` en dict JSONSchema (`type: "object"` + `properties: dict`)
+- `CommandContractError(SimphoniaError, ValueError)` ajoutée dans `core/errors.py` et exposée via `simphonia.core`.
+- Compat préservée : `system/help`, `system/ping` fonctionnent inchangés (`mcp=False` par défaut).
+- Hors scope #10 (laissé à #13) : check `from_char` dans la signature au startup, check cascade orpheline.
 
 ### 2026-04-16 — Module `simcli`
 

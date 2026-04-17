@@ -6,6 +6,7 @@ from simphonia.commands.system import SYSTEM_BUS
 from simphonia.core import default_registry
 from simphonia.core.discovery import discover
 from simphonia.http.app import create_app
+from simphonia.services.memory_service import memory_service
 
 log = logging.getLogger(__name__)
 
@@ -20,8 +21,15 @@ def build_app() -> FastAPI:
 
     system_bus = registry.get(SYSTEM_BUS)
     assert any(c.code == "help" for c in system_bus.list()), "system/help missing after discovery"
-    log.info("simphonia ready: %d bus(es), %d system command(s)", len(registry.all()), len(system_bus.list()))
 
+    memory_service.init()
+    assert memory_service.ready, "memory_service failed to initialize"
+
+    log.info(
+        "simphonia ready: %d bus(es), %d system command(s)",
+        len(registry.all()),
+        len(system_bus.list()),
+    )
     return create_app()
 
 

@@ -6,6 +6,7 @@
 # Claude Code local settings (per-machine)
 .claude/
 .working/
+data/
 
 # Python
 __pycache__/
