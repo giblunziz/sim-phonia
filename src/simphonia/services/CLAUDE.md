@@ -52,6 +52,16 @@ Contrairement à `memory_service = MemoryService()` (service mono-implémentatio
 
 L'instance est construite au **bootstrap** à partir de la configuration YAML, puis injectée / enregistrée là où elle est consommée. C'est le bootstrap qui appelle la factory, pas le module de service.
 
+## Accès à la configuration
+
+Les services **ne lisent jamais** le fichier de configuration, les variables d'environnement (`os.environ`), ni un `.env` directement. Le **`configuration_service`** (`services/configuration_service.py`) est la seule porte d'entrée :
+
+- Il est initialisé en premier au bootstrap (`configuration_service.init()`).
+- Il expose la config sous forme de **snapshot immuable** (copies défensives `deepcopy`) via `get(path)` / `section(path)` / `as_dict()`.
+- L'interpolation `${ENV_VAR}` est appliquée à la charge — une fois pour toutes.
+
+Côté factory d'un service multi-stratégies : elle reçoit en argument la sous-section dict (`configuration_service.section("services.<svc>")`) et passe les kwargs à la stratégie instanciée. Les stratégies n'importent **pas** `configuration_service` — elles reçoivent leurs paramètres explicitement par leur constructeur (DI simple).
+
 ## Contrat schemaless
 
 Les services qui servent des **entités de jeu** (fiches personnages, scènes, etc.) retournent des **`dict` bruts**, pas des modèles Pydantic / dataclass. La connaissance du schéma est déportée chez le consommateur (voir `documents/character_service.md`). Cette règle vaut pour tout futur service utilitaire exposant ce type de données.

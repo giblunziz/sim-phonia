@@ -5,33 +5,6 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
-### 🔧 SVC — Normalisation `memory_service` sur le pattern interface/provider (en cours)
-
-- Même structure que `character_service` : `services/memory_service/{__init__.py, strategies/chroma_strategy.py}`.
-- Interface ABC `MemoryService` — `recall(...)`, `stats()` (et tout ce qui est publiquement appelé).
-- Stratégie unique pour le moment : `chroma_strategy` (port de l'implémentation existante).
-- Config : `DEFAULT_MEMORY_STRATEGY = "chroma_strategy"` dans `config.py`, entrée `services.memory_service.strategy` dans `configuration.md`.
-- Bootstrap : `memory_service.init(DEFAULT_MEMORY_STRATEGY)`.
-- `commands/memory.py` : migration vers `memory_service.get().recall(...)`.
-- Rationale : découpler pour permettre un provider alternatif le jour où ChromaDB ne suffit plus.
-
-### 🔧 SVC — `mongodb_strategy` pour `character_service`
-
-- Nouvelle stratégie `MongoCharacterService` dans `services/character_service/strategies/mongodb_strategy.py`.
-- Chargement au startup : `db.characters.find()` → cache `{_id: dict}`.
-- `reset()` relance `find()`.
-- Dépendance : pilote MongoDB (`pymongo`) à ajouter dans `pyproject.toml` + `requirements.txt`.
-- Config : paramètres de connexion à documenter dans `configuration.md` (URI, database, collection, défauts).
-- Préalable souhaitable (non bloquant) : loader de configuration pour passer proprement l'URI — à défaut, env vars ou constantes en dur en première passe.
-
-### 🔧 INFRA — Loader de configuration générique + service d'accès
-
-- **Loader** : parse `simphonia.yaml` à la racine du module par défaut, override via flag CLI `--configuration <path>`. Valide la présence des sections attendues, applique les défauts documentés.
-- **Service d'accès à la config** : expose une **copie** de la config chargée au startup. Les services consommateurs ne doivent **jamais** ouvrir le fichier eux-mêmes — ils interrogent le service.
-- Pas de hot-reload. La config est un snapshot figé pendant la durée de vie du process.
-- Permet la cohérence des overrides CLI (un seul point de vérité, même si on surcharge le fichier par défaut).
-- Impacte `bootstrap.py` (chargement en tête), `__main__.py` / `cli entry` (parsing du flag), et tous les services multi-stratégies existants (character_service, memory_service après normalisation) qui pourront remplacer leurs `DEFAULT_*_STRATEGY` hardcodés par un accès config.
-
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
 **Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
@@ -131,6 +104,29 @@ _(vide)_
 _(vide)_
 
 ## DONE
+
+### 2026-04-17 — `configuration_service` + loader YAML avec interpolation d'env
+
+- `src/simphonia/services/configuration_service.py` : loader flat (module, pas package — pas de multi-stratégie). API `init(path=None)`, `get("dotted.path", default)`, `section("dotted.path")`, `as_dict()`. Toutes les lectures retournent des `deepcopy` — snapshot immuable côté consommateurs.
+- `src/simphonia/simphonia.yaml` : fichier de configuration à la racine du module (localisation par défaut), sections `services.character_service` et `services.memory_service` avec stratégies et paramètres.
+- **Interpolation `${VAR}` / `$VAR`** : appliquée récursivement sur tous les scalaires string de l'arbre via `os.path.expandvars`. Variables non définies → restent littérales, c'est au service consommateur de remonter une erreur explicite au startup (voir `mongodb_strategy`). Les env vars proviennent du `.env` (chargé via `python-dotenv` au bootstrap).
+- **Flag CLI** : `simphonia --configuration <path>` — `src/simphonia/__main__.py` parse et stocke dans `SIMPHONIA_CONFIG_PATH`, lu par le loader.
+- `bootstrap.py` : `configuration_service.init()` appelé en premier, puis `memory_service.init(section(...))` et `character_service.init(section(...))`.
+- `config.py` nettoyé : plus de `DEFAULT_MEMORY_STRATEGY`, plus de `DEFAULT_CHARACTER_STRATEGY`, plus d'override env var `CHARACTER_SERVICE_STRATEGY`. Ne contient plus que les vraies constantes runtime (chemins, modèle embedding, etc.).
+- `documents/configuration.md` : section "Service d'accès à la configuration" + doc de l'interpolation + exemple YAML mongodb complet.
+- `src/simphonia/services/CLAUDE.md` : section "Accès à la configuration" — verrouille le pattern DI (stratégies reçoivent leurs params en kwargs, n'importent pas `configuration_service`).
+- `pyproject.toml` + `requirements.txt` : `pyyaml>=6.0` en runtime.
+- Validation : démarrage avec `mongodb_strategy` actif via interpolation YAML `${MONGO_URI}` / `${MONGO_DATABASE}` depuis `.env` — `MongoCharacterService prêt — 10 fiche(s) chargée(s) depuis symphonie.characters`.
+
+### 2026-04-17 — `character_service` / `mongodb_strategy` + normalisation `memory_service`
+
+- `src/simphonia/services/memory_service/` : normalisation sur le pattern interface/strategies. ABC `MemoryService` (`recall`, `stats`), factory `build_memory_service(service_config)` avec import dynamique, `init(service_config)` / `get()`. Unique stratégie pour l'instant : `chroma_strategy` — implémentation existante portée telle quelle dans `strategies/chroma_strategy.py` (fusion de l'ancien `__init__` + `init()` dans `__init__` direct, suppression du flag `ready`). Ancien `memory_service.py` supprimé.
+- `commands/memory.py` : migration vers `memory_service.get().recall(...)`.
+- `src/simphonia/services/character_service/strategies/mongodb_strategy.py` : `MongoCharacterService(database_uri, database_name)` — chargement eager `db.characters.find()` au startup, cache `{_id: dict}`, `reset` relance `find()`, warnings sur `_id` non-string / doublons. Paramètres injectés par la factory (pas de lecture directe `os.environ`). Collection cible fixée : `characters`.
+- Factory `build_character_service` : dispatch `json_strategy` / `mongodb_strategy`, lève une erreur claire si `database_uri` / `database_name` manquants/vides (y compris après interpolation ratée).
+- `pyproject.toml` + `requirements.txt` : `pymongo>=4.6`, `python-dotenv>=1.0` ajoutés en runtime.
+- `documents/character_service.md` + `documents/configuration.md` : `mongodb_strategy` documentée, entrées `database_uri` / `database_name`.
+- Validation : démarrage complet avec mongo actif — `MongoCharacterService prêt — 10 fiche(s) chargée(s) depuis symphonie.characters`, 3 bus, 2 commandes system, chargement Chroma OK (1671 documents), mongo OK.
 
 ### 2026-04-17 — `character_service` v1 (interface + `json_strategy`, bus `character`)
 

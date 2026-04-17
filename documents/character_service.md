@@ -29,7 +29,7 @@ Ces commandes :
 **Sémantique de `reset`** : le comportement dépend de la stratégie active.
 
 - `json_strategy` → rescan intégral du répertoire `./resources/characters/` et reconstruction du cache.
-- `mongodb_strategy` (à venir) → nouvel appel `db.characters.find()` et repopulation du cache.
+- `mongodb_strategy` → nouvel appel `db.characters.find()` et repopulation du cache.
 
 Dans tous les cas, `reset` est **destructif côté cache** : tout état mémoire est vidé puis reconstruit depuis la source de vérité.
 
@@ -67,7 +67,7 @@ L'implémentation suit un pattern **interface + implémentations interchangeable
 - Une **interface** `character_service` définit le contrat (les deux fonctions ci-dessus).
 - Plusieurs **providers/stratégies** implémentent ce contrat :
   - `json_strategy` — lecture des fiches depuis des fichiers JSON locaux (implémentation de départ).
-  - `mongodb_strategy` — lecture depuis MongoDB (à venir).
+  - `mongodb_strategy` — lecture depuis une collection MongoDB `characters`.
   - *(d'autres stratégies pourront s'ajouter plus tard.)*
 
 ### Stratégie initiale : `json_strategy`

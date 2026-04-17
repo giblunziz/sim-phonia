@@ -1,9 +1,9 @@
 """MemoryService — RAG contextuel.
 
 Interface + factory qui instancie la stratégie (`chroma_strategy`, …) sélectionnée
-via la configuration YAML (`services.memory_service.strategy`). Pour l'instant,
-seule `chroma_strategy` est disponible — l'abstraction est en place pour permettre
-un provider alternatif le jour où ChromaDB ne suffit plus.
+via la configuration YAML (`services.memory_service`). Pour l'instant,
+seule `chroma_strategy` est disponible — l'abstraction est en place pour
+permettre un provider alternatif le jour où ChromaDB ne suffit plus.
 """
 
 from abc import ABC, abstractmethod
@@ -30,12 +30,10 @@ class MemoryService(ABC):
         """Retourne un instantané de l'état du service (observabilité)."""
 
 
-def build_memory_service(strategy: str) -> MemoryService:
-    """Instancie la stratégie configurée.
+def build_memory_service(service_config: dict) -> MemoryService:
+    """Instancie la stratégie configurée (`services.memory_service` section)."""
+    strategy = service_config.get("strategy", "chroma_strategy")
 
-    Import dynamique pour éviter de charger les dépendances de toutes les
-    stratégies à l'import du package.
-    """
     if strategy == "chroma_strategy":
         from simphonia.services.memory_service.strategies.chroma_strategy import (
             ChromaMemoryService,
@@ -49,11 +47,11 @@ def build_memory_service(strategy: str) -> MemoryService:
 _instance: MemoryService | None = None
 
 
-def init(strategy: str) -> None:
-    """Construit l'instance du service selon la stratégie donnée. Idempotent."""
+def init(service_config: dict) -> None:
+    """Construit l'instance du service selon la config donnée. Idempotent."""
     global _instance
     if _instance is None:
-        _instance = build_memory_service(strategy)
+        _instance = build_memory_service(service_config)
 
 
 def get() -> MemoryService:

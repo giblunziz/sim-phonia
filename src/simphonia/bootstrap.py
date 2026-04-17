@@ -1,13 +1,15 @@
 import logging
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from simphonia.commands.system import SYSTEM_BUS
-from simphonia.config import DEFAULT_CHARACTER_STRATEGY, DEFAULT_MEMORY_STRATEGY
-from simphonia.core import default_registry
-from simphonia.core.discovery import discover
-from simphonia.http.app import create_app
-from simphonia.services import character_service, memory_service
+load_dotenv()
+
+from simphonia.commands.system import SYSTEM_BUS  # noqa: E402
+from simphonia.core import default_registry  # noqa: E402
+from simphonia.core.discovery import discover  # noqa: E402
+from simphonia.http.app import create_app  # noqa: E402
+from simphonia.services import character_service, configuration_service, memory_service  # noqa: E402
 
 log = logging.getLogger(__name__)
 
@@ -15,6 +17,8 @@ COMMANDS_PACKAGE = "simphonia.commands"
 
 
 def build_app() -> FastAPI:
+    configuration_service.init()
+
     registry = default_registry()
     registry.get_or_create(SYSTEM_BUS)
 
@@ -23,8 +27,8 @@ def build_app() -> FastAPI:
     system_bus = registry.get(SYSTEM_BUS)
     assert any(c.code == "help" for c in system_bus.list()), "system/help missing after discovery"
 
-    memory_service.init(DEFAULT_MEMORY_STRATEGY)
-    character_service.init(DEFAULT_CHARACTER_STRATEGY)
+    memory_service.init(configuration_service.section("services.memory_service"))
+    character_service.init(configuration_service.section("services.character_service"))
 
     log.info(
         "simphonia ready: %d bus(es), %d system command(s)",

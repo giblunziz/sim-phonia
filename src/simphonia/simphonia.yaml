@@ -1,7 +1,9 @@
-
-
-
 services:
   character_service:
-    strategy: json_strategy
-    base_path: /resources/characters
+    strategy: mongodb_strategy
+    database_uri: ${MONGO_URI}
+    database_name: ${MONGO_DATABASE}
+#    strategy: json_strategy
+
+  memory_service:
+    strategy: chroma_strategy
