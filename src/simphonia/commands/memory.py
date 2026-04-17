@@ -1,5 +1,5 @@
 from simphonia.core import command
-from simphonia.services.memory_service import memory_service
+from simphonia.services import memory_service
 
 MEMORY_BUS = "memory"
 
@@ -18,7 +18,7 @@ def recall_command(
     factor: float = 1.0,
     max_distance: float | None = None,
 ) -> list[dict]:
-    return memory_service.recall(
+    return memory_service.get().recall(
         from_char=from_char,
         context=context,
         top_k=top_k,

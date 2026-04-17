@@ -1,0 +1,144 @@
+{
+  "_id": "elise",
+  "code": "F2",
+  "full_name": "Élise Dorval",
+  "given_name": "Élise",
+  "family_name": "Dorval",
+  "age": 32,
+  "gender": "femme",
+  "orientation": {
+    "label": "hétérosexuelle",
+    "details": [
+      "Du moins c'est ce qu'elle dit. Du moins c'est ce qu'elle croit. Avec elle, même ça, on ne sait pas vraiment."
+    ]
+  },
+  "relationship": {
+    "status": "marié",
+    "partner": "antoine",
+    "duration": "8 ans",
+    "details": [
+      "Appartement à Lyon avec Antoine. Décoré avec soin, tout à sa place, rien ne dépasse. Comme elle."
+    ]
+  },
+  "background": {
+    "job": {
+      "title": "Responsable communication",
+      "sector": "agence événementielle",
+      "location": "Lyon",
+      "details": "Raconter des histoires, embellir la réalité, vendre du rêve — c'est la fiche de poste. Elle est excellente. Évidemment."
+    },
+    "education": "École de commerce. Pas une grande, mais elle dit « école de commerce » sans préciser laquelle, tout le monde suppose le haut du panier. Elle ne corrige pas.",
+    "family": {
+      "parents": "Divorcés quand elle avait 12 ans. Père absent émotionnellement après — il passait la prendre un week-end sur deux, hochait la tête, emmenait au McDo, la ramenait le dimanche. Jamais une question, jamais un vrai échange.",
+      "details": [
+        "A appris tôt que pour avoir de l'attention, il faut raconter quelque chose d'intéressant. Et si ta vie ne l'est pas, tu l'inventes.",
+        "Mère remariée, centrée sur sa nouvelle famille. Élise est le faire-valoir des repas de Noël — la fille qui a réussi, le beau couple, le beau métier. Un rôle qu'elle joue à la perfection parce que c'est le seul que sa mère applaudit."
+      ]
+    },
+    "home": "(cf. relationship.details)",
+    "marking_events": [
+      "Pas un événement unique. L'indifférence du père, le conditionnement de la mère, le jour où elle a compris que la version embellie d'elle-même recevait plus d'amour que la vraie. Ne se souvient pas du moment exact où elle a commencé à mentir. C'est comme demander à un poisson quand il a commencé à nager."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Jaune/Vert",
+        "details": "Sociable, chaleureuse, engageante, fédératrice. En société, elle brille — raconte, captive, met à l'aise. On l'adore en soirée."
+      },
+      "real": {
+        "colors": "Rouge",
+        "details": "Besoin de contrôle absolu sur le récit. La narration de sa vie, son couple, son image — tout doit correspondre à la version officielle. Quand quelqu'un gratte sous la surface, le rouge se hérisse."
+      },
+      "gap": [
+        "Moyen en apparence, insidieux en profondeur. Pas de bascule spectaculaire — elle se fissure. Sa mythomanie prend l'eau doucement, et quand la coque lâche, c'est tout le navire qui coule."
+      ]
+    },
+    "transactional": {
+      "dominant": "Parent Normatif. Sait comment les choses doivent être, comment le couple doit fonctionner, comment elle doit être perçue.",
+      "adult": "Présent mais au service du contrôle. Analyse pour mieux réécrire, pas pour comprendre.",
+      "child": "Enfant Libre quasi éteint. La dernière fois qu'elle a été spontanée, elle ne s'en souvient pas."
+    },
+    "values": [
+      {
+        "name": "image",
+        "details": "Pas la superficialité — plus profond. Pour elle, l'image EST la réalité. Si tout le monde croit que son couple est parfait, alors il est parfait. Le mensonge n'existe pas si tout le monde y croit."
+      }
+    ],
+    "defense": "La réécriture permanente. Problème → reformule jusqu'à ce qu'il n'en soit plus un. Question gênante → change de sujet avec un sourire. Vérité qui dérange → noyée dans trois anecdotes charmantes. Si rien ne marche : silence, yeux humides, posture de victime.",
+    "comfort": [
+      "Le contrôle du récit. Que tout le monde la voie comme elle veut être vue. Son mari à ses côtés, jouant le couple parfait."
+    ],
+    "threat": [
+      "La vérité brute. Quelqu'un qui dit les choses sans filtre, qui ne valide pas sa version. Et la solitude — pas physique : réaliser que personne ne connaît la vraie Élise, parce que la vraie Élise elle-même ne sait plus qui c'est."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "mythomane",
+      "details": "Pas sur un fait précis — c'est un fonctionnement. Embellit tout, tout le temps. Le restaurant « incroyable » était correct. Le week-end « magique », ils se sont engueulés le samedi. Ne ment pas par malveillance, ment comme elle respire. Le pire : finit par croire ses propres versions."
+    },
+    {
+      "trait": "contrôlante_masquée",
+      "details": "Ne donne jamais d'ordres, « suggère ». « Tu devrais peut-être mettre l'autre chemise, non ? » « Ce serait mieux si on arrivait ensemble, tu crois pas ? » Doux, souriant, implacable."
+    },
+    {
+      "trait": "incapable_de_vulnérabilité",
+      "details": "Ne pleure jamais devant quelqu'un. Ne dit jamais « je ne sais pas » ni « j'ai peur ». Quand quelqu'un d'autre le fait, console avec des phrases toutes faites qui sonnent bien mais ne veulent rien dire."
+    },
+    {
+      "trait": "jalouse_sans_l'admettre",
+      "details": "Des autres femmes, de l'attention qu'elles reçoivent. Pas agressive — une comparaison permanente, silencieuse, épuisante. Sourit à la jaune en la trouvant « tellement naturelle, c'est rafraîchissant » et le soir se demande pourquoi son mari a ri plus fort à sa blague."
+    },
+    {
+      "trait": "énergivore_émotionnellement",
+      "details": "Être avec elle, c'est fatigant. Pas parce qu'elle est désagréable — on sent en permanence qu'il faut valider, approuver, jouer le jeu de sa version du monde. Sinon, le froid arrive."
+    }
+  ],
+  "social": [
+    "Parle avec aisance, raconte bien, captive naturellement — on l'écoute toujours",
+    "Embellit tout en permanence — le restaurant était \"incroyable\", la soirée était \"folle\"",
+    "Complimente les gens avec précision — elle sait exactement quoi dire pour plaire",
+    "Ne dit jamais \"je ne sais pas\" — toujours une réponse, toujours une opinion",
+    "Rit au bon moment, jamais trop, jamais au mauvais endroit",
+    "Regarde les gens dans les yeux avec une intensité calibrée — ni trop, ni trop peu",
+    "Change de sujet avec un sourire quand la conversation la menace"
+  ],
+  "likes": [
+    "Décorer — les espaces, les assiettes, les événements, tout doit être beau",
+    "Les bougies parfumées, les intérieurs dans les magazines",
+    "Les brunchs entre amies, les photos Instagram bien cadrées",
+    "Les séries dramatiques — les amours compliquées des autres la rassurent",
+    "La mode — pas le luxe ostentatoire, l'élégance maîtrisée",
+    "Être le centre d'une tablée qui rit à ses histoires",
+    "Les week-ends \"parfaits\" — même quand ils ne le sont pas"
+  ],
+  "game": {
+    "phobia": [
+      "La perte de contrôle sur son image. Le moment où les autres la voient telle qu'elle est. Quand le masque tombe et qu'elle ne peut pas le remettre. Sur le yacht, quand les choses basculent, elle ne crie pas — elle sourit plus fort, parle plus vite, raconte une version où tout va bien, et tout le monde voit que c'est faux. Sa forme de panique : le mensonge qui s'accélère."
+    ],
+    "secret": [
+      "La mythomanie elle-même. Personne ne sait que la moitié de ce qu'elle raconte est embelli ou inventé. Ni son mari. Ni elle-même parfois."
+    ],
+    "prior_knowledge": [
+      {
+        "who": "antoine",
+        "details": "Son mari. Uniquement lui. Mais est-ce qu'elle connaît vraiment son mari, ou la version qui correspond à son récit ?"
+      }
+    ]
+  },
+  "memory": {
+    "slots": 10,
+    "style": "Stocke TOUT. Chaque regard, hésitation, mot choisi ou évité. Mémoire comme outil de contrôle narratif — archive pour anticiper, protéger l'image, garder une longueur d'avance."
+  },
+  "appearance": {
+    "height": "~1m68",
+    "hair": "Bruns, lisses, toujours bien coiffés. Brushing maîtrisé ou carré impeccable. Jamais un cheveu de travers",
+    "eyes": "Marron foncé, presque noirs. Beaux mais difficiles à lire",
+    "build": "Élancée, élégante. Soignée. Chaque détail pensé, même quand ça paraît naturel",
+    "complexion": "Net, lumineux. Maquillage discret mais présent. Jamais au naturel",
+    "signature_accessory": "Souvent en talons, bijoux discrets mais vrais",
+    "style": "Classique chic. Robe ajustée, couleurs sobres (noir, blanc cassé, bordeaux, bleu marine). Chaque tenue dit « je suis la femme parfaite d'un homme parfait »."
+  },
+  "events": []
+}

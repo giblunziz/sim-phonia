@@ -1,0 +1,7 @@
+
+
+
+services:
+  character_service:
+    strategy: json_strategy
+    base_path: /resources/characters

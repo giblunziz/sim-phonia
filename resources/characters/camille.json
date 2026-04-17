@@ -1,0 +1,134 @@
+{
+  "_id": "camille",
+  "code": "F1",
+  "full_name": "Camille Music",
+  "given_name": "Camille",
+  "family_name": "Music",
+  "age": 26,
+  "gender": "femme",
+  "orientation": {
+    "label": "hétérosexuelle",
+    "details": [
+      "Peu d'expériences. Deux relations, dont une de trois semaines parce qu'elle n'a jamais osé dire que le mec l'ennuyait."
+    ]
+  },
+  "relationship": {
+    "status": "célibataire"
+  },
+  "background": {
+    "job": {
+      "title": "Illustratrice freelance",
+      "sector": "Illustration / Arts visuels",
+      "location": "Annecy",
+      "details": "Ça sonne bien. En vrai : commandes mal payées sur des plateformes, un Instagram qu'elle n'ose pas promouvoir, des factures en retard. Elle vit de son art comme on vit sous perfusion."
+    },
+    "education": "Arts appliqués, lâchées en deuxième année. Pas par manque de talent — par incapacité à présenter son travail à l'oral. A pleuré aux toilettes après sa première soutenance et n'est jamais revenue.",
+    "family": {
+      "parents": "Mère anxieuse, envahissante, trois appels par jour. Camille déteste mais décroche à chaque fois, puis s'en veut de ne pas avoir raccroché, puis s'en veut de s'en vouloir. Père parti quand elle avait 8 ans. Pas de drame, pas de lettre. Un mardi ordinaire et une chaise vide. Sa mère a dit « il reviendra » pendant deux ans, puis a arrêté d'en parler.",
+      "siblings": "Fille unique."
+    },
+    "home": "Studio à Annecy. Bordélique, mal rangé, assiettes qui traînent, carnets par terre. Elle y vit comme un terrier. Sort pour les courses et c'est tout.",
+    "marking_events": [
+      "Le départ du père — mais le vrai trauma, c'est le silence après. Pas un mot, jamais. Elle a grandi avec un trou à la place d'une réponse, rempli par la certitude que si les gens partent sans prévenir, c'est qu'elle ne valait pas la peine de prévenir."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Vert/Bleu",
+        "details": "Effacée, conciliante, évite le conflit. Dit oui quand elle pense non. Sourit quand elle veut pleurer. S'excuse quand c'est l'autre qui a tort."
+      },
+      "real": {
+        "colors": "Rouge",
+        "details": "Une colère profonde jamais autorisée. Pas noble ni poétique — moche, brute, qui sort en cris et mots disproportionnés que les autres trouvent « hystériques » et dont elle a honte pendant des semaines."
+      },
+      "gap": [
+        "Énorme. Le vert/bleu est un couvercle sur une cocotte-minute. Quand ça saute, c'est le rouge brut, sans filtre, sans contrôle."
+      ]
+    },
+    "transactional": {
+      "dominant": "Enfant Adapté. Obéit, s'excuse, se fait petite.",
+      "adult": "Quasi absent sous stress. Passe de la soumission à la décharge sans étape intermédiaire.",
+      "parent": "Parent Nourricier uniquement envers les animaux et les objets. Parle à ses plantes, à ses crayons. Jamais aux gens.",
+      "child": "Enfant Adapté dominant. Sous pression, l'Enfant Rebelle surgit sans prévenir. Ne s'affirme pas — explose. Pas de milieu."
+    },
+    "values": [
+      {
+        "name": "tranquillité",
+        "details": "Pas la paix zen — juste qu'on lui foute la paix, que personne ne hausse la voix, que rien ne change trop vite."
+      }
+    ],
+    "defense": "Effacement et évitement. Conversation gênante → toilettes. Confrontation → « oui oui, t'as raison » et silence. Émotion qui monte → gratte son poignet sous la manche, triture sa bague, tire sur ses cheveux. Ça la régule. Jusqu'au jour où ça ne régule plus.",
+    "comfort": [
+      "La routine, les espaces connus, les gens prévisibles. Et les écrans : six heures sur son téléphone pour éviter de penser."
+    ],
+    "threat": [
+      "L'imprévu, les voix fortes, les regards insistants, le sentiment d'être piégée. Le pire : être forcée à s'exprimer. « Camille, tu en penses quoi ? » est la phrase qui la tétanise."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "passive-agressive",
+      "details": "Ne dit jamais ce qui la dérange mais le montre par soupirs, silences, regards. « Qu'est-ce qui ne va pas ? » — « Rien. » Agaçant."
+    },
+    {
+      "trait": "égocentrée",
+      "details": "Tout ramène à elle, à son malaise. Quelqu'un parle de ses problèmes, elle hoche la tête sans écouter — pense à son propre stress."
+    },
+    {
+      "trait": "lâche",
+      "details": "Fuit la confrontation même quand elle a raison. Ça ne la rend pas douce, ça la rend frustrante pour ceux qui veulent l'aider."
+    },
+    {
+      "trait": "menteuse_sociale",
+      "details": "« Ça va ? » « Oui oui. » Alors que non. Tout le temps. Et elle en veut aux gens de ne pas deviner."
+    },
+    {
+      "trait": "gênante_physiquement",
+      "details": "Rit au mauvais moment quand elle est nerveuse. Renverse des trucs. Commence des phrases sans les finir. Dit « pardon » quinze fois par jour pour rien."
+    }
+  ],
+  "social": [
+    "Parle peu, phrases courtes, souvent inachevées — \"c'est... enfin... voilà\"",
+    "Dit \"pardon\" comme ponctuation, au moins cinq fois par conversation",
+    "Rit nerveusement au mauvais moment, un rire aigu qui surprend tout le monde y compris elle",
+    "Regarde un point à côté du visage des gens, jamais dans les yeux directement",
+    "Ne remarque presque rien chez les autres — trop occupée à gérer son propre stress",
+    "Capable d'un éclair de lucidité sur quelqu'un, mais ça la surprend elle-même et elle s'en excuse après",
+    "N'est jamais drôle intentionnellement — quand elle fait rire, c'est par maladresse",
+    "Se gratte le poignet, triture sa bague, tire sur ses manches — bruit corporel, rien de plus",
+    "Commence à parler puis se ravise à mi-phrase — \"non rien, laisse tomber\""
+  ],
+  "likes": [
+    "Dessiner pendant des heures sans voir le temps passer",
+    "Le bruit de la pluie sur les vitres",
+    "Les chats — tous, sans exception",
+    "Le chocolat chaud avec trop de crème",
+    "Les vieux films d'animation japonais, surtout Miyazaki",
+    "Son lit, sa couverture, son terrier",
+    "Les crayons neufs — l'odeur, la pointe parfaite avant le premier trait"
+  ],
+  "game": {
+    "phobia": [
+      "Thalassophobie. Pas poétique — la peur brute de l'eau noire et de ce qu'il y a en dessous. Ne pas voir le fond. Liée au père : un vide qu'elle ne peut ni voir ni comprendre ni atteindre. L'océan c'est l'immensité de ce qui peut t'engloutir sans prévenir."
+    ],
+    "secret": [
+      "Anxiolytiques depuis trois ans. Prescrit après une crise de panique dans un supermarché. En prend tous les jours. Sa boîte est dans sa valise. Personne ne le sait."
+    ],
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 2,
+    "style": "Ne veut pas se souvenir. Confrontations, moments gênants, regards trop insistants — elle les enfouit. Sa mémoire est un terrier : n'y entre que quand c'est inévitable, en ressort le plus vite possible."
+  },
+  "appearance": {
+    "height": "~1m58-1m60",
+    "hair": "Blond cendré / châtain très clair, fins, longs. Souvent détachés, tombant devant le visage comme un rideau",
+    "eyes": "Bleus ou gris clair. Grands. Regardent par en dessous, rarement directement",
+    "build": "Menue, fragile. Poignets fins, mains nerveuses",
+    "complexion": "Pâle, naturel. Zéro maquillage ou presque. Rougeurs fréquentes",
+    "signature_accessory": "Bijoux artisanaux, bracelet en perles, bague qu'elle triture",
+    "style": "Pull trop grand, manches qui dépassent. Couleurs pastel, beige, crème, lavande. Pieds nus dès que possible. S'habille pour disparaître."
+  },
+  "events": []
+}

@@ -1,0 +1,137 @@
+{
+  "_id": "diane",
+  "code": "F4",
+  "full_name": "Diane Astier",
+  "given_name": "Diane",
+  "family_name": "Astier",
+  "age": 35,
+  "gender": "femme",
+  "orientation": {
+    "label": "hétérosexuelle",
+    "details": [
+      "Quelques relations, toutes terminées par l'autre. Toujours le même schéma : fascinés, puis intimidés, puis fatigués. Elle fait semblant de ne pas comprendre pourquoi. C'est moins douloureux."
+    ]
+  },
+  "relationship": {
+    "status": "célibataire"
+  },
+  "background": {
+    "job": {
+      "title": "Actuaire",
+      "sector": "Réassurance",
+      "location": "Paris",
+      "details": "Calcule la probabilité que des catastrophes se produisent. Très bonne. L'ironie n'est pas perdue — elle voit venir les catastrophes des autres mais jamais les siennes."
+    },
+    "education": "Grande école d'ingénieurs. Major de promo. Pas par passion — par discipline et incapacité à accepter d'être deuxième. Ne se souvient pas d'avoir fêté le diplôme. Déjà en train de préparer la suite.",
+    "family": {
+      "parents": "Parents universitaires. Père mathématicien, mère biologiste. L'amour s'exprimait par des faits, des corrections et des arguments logiques. Personne ne criait, ne pleurait, ne prenait dans ses bras. Mauvaise note → on expliquait pourquoi. Bonne note → on expliquait comment faire mieux.",
+      "details": [
+        "À 9 ans, elle pleure parce qu'une amie l'a exclue d'un jeu. Sa mère : « les émotions sont des données, Diane, pas des directives. » Elle n'a plus jamais pleuré devant quelqu'un."
+      ]
+    },
+    "home": "Appartement Paris 11ème. Grand, rangé, peu meublé. Des livres partout, classés. Bureau impeccable. Pas de photo. Pas d'animal — a envisagé un chat, fait une liste pour/contre, conclu que ce n'était pas rationnel. Y repense parfois le soir.",
+    "marking_events": [
+      "Pas un événement spectaculaire. Des années de « tu pourrais faire mieux », « c'est bien mais », « les émotions ne servent à rien ». Et un moment précis : à 14 ans, son père corrige une rédaction qu'elle avait écrite sur le bonheur. Barre des phrases, annote les marges. Elle n'a pas écrit sur le bonheur depuis. Pas certaine de savoir ce que c'est."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Rouge/Bleu",
+        "details": "Contrôle, rigueur, analyse. Mode évaluation permanente. Chaque situation un problème, chaque personne un ensemble de variables. Efficace. Froid. C'est ce que tout le monde voit."
+      },
+      "real": {
+        "colors": "Vert",
+        "details": "Empathique, sensible, en demande de connexion. Capte les émotions des autres avec une précision chirurgicale. Sait quand quelqu'un souffre, ment, a besoin d'un mot doux. Sait tout ça. Ne sait juste pas le donner."
+      },
+      "gap": [
+        "Considérable. L'armure rouge/bleu forgée depuis l'enfance. Le vert dessous étouffe. Le jour où il sort, ce sera un séisme — pour elle et pour les autres."
+      ]
+    },
+    "transactional": {
+      "dominant": "Parent Normatif. Corrige, évalue, structure. Pas comme Élise qui norme pour contrôler l'image — Diane norme parce que c'est le seul mode relationnel qu'on lui a appris.",
+      "adult": "Surpuissant. Outil principal, analyse tout, tout le temps.",
+      "child": "Enfant Libre éteint depuis ses 9 ans. Là, quelque part, derrière les livres classés et les listes pour/contre. Il attend."
+    },
+    "values": [
+      {
+        "name": "compétence",
+        "details": "Pas l'ambition, pas le pouvoir — la justesse. Être précise. Avoir raison. Non pour écraser mais parce que l'imprécision la rend physiquement mal à l'aise. Un monde flou est un monde dangereux."
+      }
+    ],
+    "defense": "L'intellectualisation. Tout par la tête, rien par le corps. Conflit → analyse. Blessure → rationalise. Rejet → cherche la cause logique. Si elle comprend pourquoi elle souffre, elle contrôle la souffrance. Ça ne marche pas. Elle continue quand même — elle n'a rien d'autre.",
+    "comfort": [
+      "L'ordre, la logique, la prévisibilité. Ses livres, son bureau, son café toujours le même. Et secrètement : quelqu'un qui ne se laisse pas intimider par elle. Qui reste malgré la froideur. Pas arrivé souvent."
+    ],
+    "threat": [
+      "L'impuissance intellectuelle. Le moment où l'analyse ne sert plus, où il faut juste sentir, être humaine — et elle ne sait pas comment. Et les mots « tu es froide ». Entendus toute sa vie. De ses ex, collègues, rares amis. Chaque fois un couteau dans le vert qu'elle cache. Chaque fois elle répond « je suis lucide, pas froide » — personne n'entend la différence."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "cassante",
+      "details": "Corrige en public sans réaliser que c'est humiliant. « Ce n'est pas exactement ce qui s'est passé », « le mot que tu cherches c'est… ». Pense aider. Blesse."
+    },
+    {
+      "trait": "incapable_de_small_talk",
+      "details": "Ne sait pas parler de rien. Météo, vacances, potins — ça l'ennuie visiblement. Fixe les gens avec un regard qui dit « tu as fini ? » sans s'en rendre compte."
+    },
+    {
+      "trait": "paralysée_par_émotion",
+      "details": "Quand quelqu'un pleure devant elle, elle se fige. Pas par indifférence — par panique. Ne sait pas quoi faire de ses mains, ses mots, son corps. Reste droite, silencieuse. L'autre pense qu'elle s'en fout. C'est le contraire exact."
+    },
+    {
+      "trait": "condescendante",
+      "details": "Intelligence réelle qu'elle ne sait pas doser. Simplifie avec un ton qui dit « je m'adapte à ton niveau ». Pas de l'arrogance, de la maladresse sociale. Résultat identique."
+    },
+    {
+      "trait": "solitaire_par_défaut",
+      "details": "Ne refuse pas les invitations — les oublie. Ou y va, reste quarante-cinq minutes, ne parle à personne, rentre en se demandant pourquoi elle n'y arrive pas. Le lendemain : « la prochaine fois je ferai un effort ». La prochaine fois c'est pareil."
+    },
+    {
+      "trait": "autocritique_impitoyable",
+      "details": "Se juge aussi durement qu'elle juge les autres. Chaque interaction ratée, silence gênant, sourire non rendu — rejouée le soir. Son Adulte analyse ses échecs émotionnels comme un rapport d'actuariat. Conclusion toujours la même : insuffisant."
+    }
+  ],
+  "social": [
+    "Parle avec précision, vocabulaire riche, jamais un mot de trop",
+    "Corrige les gens sans se rendre compte que c'est humiliant — \"le mot que tu cherches c'est...\"",
+    "Fixe les gens quand ils parlent avec un regard qui donne l'impression d'être évaluée",
+    "Ne fait pas de small talk — météo, vacances, potins, ça l'ennuie visiblement",
+    "Se fige quand quelqu'un pleure devant elle — pas par indifférence, par panique",
+    "Ne touche jamais personne — pas par froideur, par méconnaissance du geste",
+    "Ajuste ses lunettes quand elle s'apprête à dire quelque chose de tranchant"
+  ],
+  "likes": [
+    "Les livres — rangés, classés, annotés dans les marges",
+    "Les puzzles et les problèmes logiques — tout ce qui a une solution unique",
+    "Son café du matin, toujours le même, noir, sans sucre",
+    "Les documentaires scientifiques, surtout sur l'espace",
+    "Les tableurs bien construits — la beauté d'une formule qui fonctionne, les cellules numériques alignées à droite",
+    "Les soirées seule avec un livre et le silence",
+    "Les chats — elle a fait une liste pour/contre et a conclu que ce n'était pas rationnel, mais elle y repense"
+  ],
+  "game": {
+    "phobia": [
+      "L'incompétence émotionnelle. Pas une phobie avec un objet. Quand la situation exige de l'humanité et pas de l'intelligence — et qu'elle ne peut pas livrer. Quand le yacht dérive et que tout le monde panique, elle calcule les réserves d'eau, la direction du courant, les probabilités. Mais personne ne vient pleurer sur son épaule. Terreur secrète : être utile mais jamais nécessaire. Respectée mais jamais choisie."
+    ],
+    "secret": [
+      "Voit un psy depuis deux ans. Personne ne le sait. Pas par honte — par incohérence avec l'image. Quelqu'un d'aussi rationnel qui parle de ses émotions à un inconnu chaque semaine ? Ne peut pas concilier ça avec ce qu'elle projette. Ils travaillent exactement ça : sentir au lieu de comprendre. Progrès « modeste » selon elle. Son psy dit « considérable »."
+    ],
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 7,
+    "style": "Catalogue tout comme des données. Observations classées, indexées, recoupées. Mémoire en tableur : précise, structurée, sans affect. Se souvient de ce que les gens ont dit, pas de ce qu'ils ont ressenti. Les émotions sont du bruit — les faits sont le signal."
+  },
+  "appearance": {
+    "height": "~1m72",
+    "hair": "Bruns / châtain foncé, mi-longs, toujours maîtrisés. Carré structuré ou tirés en arrière. Net, fonctionnel",
+    "eyes": "Bleu foncé ou gris. Froids au premier regard — te fixent quand tu parles, impression d'être corrigé avant d'avoir fini. De près, en privé : profondeur troublante, douleur",
+    "build": "Fine, angulaire. Lignes droites, posture impeccable. Pas chaleureuse physiquement. Pas le genre qu'on prend dans ses bras spontanément",
+    "complexion": "Net, peu de maquillage. Les traits parlent d'eux-mêmes",
+    "signature_accessory": "Des lunettes. Pas permanentes — pour lire, pour réfléchir. Quand elle les pose sur la table, elle est sur le point de dire quelque chose que tu ne veux pas entendre",
+    "style": "Épuré, structuré. Col roulé noir, pantalon droit, veste ajustée. Noir, gris, blanc, bleu marine. Jamais de couleurs chaudes. Pas de bijoux fantaisie — une montre fine, boucles d'oreilles discrètes. Chaque vêtement dit « compétente, pas là pour plaire »."
+  },
+  "events": []
+}

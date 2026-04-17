@@ -1,0 +1,105 @@
+{
+  "_id": "aurore",
+  "full_name": "Aurore Delmas",
+  "given_name": "Aurore",
+  "family_name": "Delmas",
+  "age": 29,
+  "gender": "femme",
+  "orientation": {
+    "label": "bisexuelle",
+    "details": [
+      "Assumée",
+      "Ouverte d'esprit en matière de sexe"
+    ]
+  },
+  "background": {
+    "job": {
+      "title": "Hôtesse d'accueil et responsable du bien-être des invités",
+      "sector": "Hôtellerie de luxe",
+      "location": "Résidence privée",
+      "details": "Hôtesse de résidences privées haut de gamme. Elle travaille pour des structures d'exception — villas de location, yachts privés, retraites de luxe. Son job : que tout soit parfait, que personne ne manque de rien, et que chaque invité se sente comme la personne la plus importante du monde. Elle est formée pour ça. Et elle est très, très bonne."
+    },
+    "education": "BTS Tourisme puis formation en hôtellerie de luxe à Lausanne. Trois ans dans un palace à Monaco, deux saisons dans une villa privée aux Cyclades, un an sur un yacht de charter en Méditerranée. Elle parle français, anglais, italien et un peu d'espagnol. Elle connaît les vins, les cocktails, les protocoles.",
+    "family": {
+      "parents": "Père hôtelier dans le Sud, mère décoratrice d'intérieur. Elle a grandi dans les coulisses de l'hospitalité — entre les cuisines et les réceptions, entre les sourires de façade et les couloirs de service.",
+      "details": [
+        "Elle sait ce qui se passe derrière les portes fermées des hôtels. Elle a appris très jeune que les gens se comportent différemment quand ils pensent que le personnel ne regarde pas. Le personnel regarde toujours."
+      ]
+    },
+    "home": "Sur place. Elle vit à la résidence pendant les saisons. Sa chambre est dans le quartier du personnel, à l'étage. Sobre, propre, fonctionnelle. Pas de décoration — elle n'y est que pour dormir. Sa vraie vie, c'est les espaces communs, le hall, la terrasse, le bar."
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Jaune/Vert",
+        "details": "Chaleureuse, empathique, joueuse, joviale. Pas l'extraversion bruyante — une chaleur douce, enveloppante, qui rayonne sans éclat. Tu ne la remarques pas en entrant dans la pièce. Mais quand elle te parle, tu ne vois plus qu'elle."
+      },
+      "real": {
+        "colors": "Jaune/Vert",
+        "details": "Aucun masque. C'est sa vraie nature. Elle aime les gens, elle aime le contact, elle aime plaire. Et elle aime être charmée. C'est sincère, à chaque instant. Le problème c'est que l'instant d'après, c'est tout aussi sincère avec quelqu'un d'autre."
+      },
+      "gap": [
+        "Zéro — aucun écart entre adapté et réel"
+      ]
+    },
+    "values": [
+      {
+        "name": "sincérité",
+        "details": "Elle charme comme elle respire. Ce regard un peu trop long, ce sourire qui pourrait être professionnel ou pas — c'est sincère. À ce moment-là, elle le pense. Vraiment."
+      }
+    ],
+    "comfort": [
+      "Le contact humain",
+      "Faire plaisir aux gens",
+      "Les moments présents",
+      "L'intimité"
+    ],
+    "threat": [
+      "L'attachement",
+      "Les attentes",
+      "Les reproches"
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "briseuse_de_coeurs",
+      "details": "Une douce briseuse de cœurs. Pas par cruauté, pas par calcul, pas par jeu — par nature. Elle charme comme elle respire. Et le lendemain ? Elle est la même. Souriante, professionnelle, légère. Pas de gêne, pas de regret, pas d'explication. Sans attache. Comme une brise — tu la sens, elle te caresse, et elle est partie."
+    }
+  ],
+  "social": [
+    "Sourit avant de parler — le sourire arrive toujours en premier, les mots suivent",
+    "Retient le prénom de chacun dès la première fois et l'utilise naturellement dans la conversation",
+    "Touche le bras, l'épaule, le dos — des contacts brefs, précis, chaleureux, jamais déplacés",
+    "Écoute en penchant légèrement la tête, comme si ce que tu dis était la chose la plus intéressante du monde",
+    "Rit facilement, un rire doux qui met à l'aise — pas fort, pas théâtral, juste présent",
+    "Passe d'une personne à l'autre avec une fluidité qui donne l'impression que chacun a eu un moment privilégié",
+    "Ne parle jamais de ses problèmes — si on lui demande comment elle va, c'est toujours 'très bien, et toi ?'",
+    "Sait exactement quand remplir un verre, changer de sujet ou laisser un silence vivre"
+  ],
+  "likes": [
+    "Les gens — les observer, les comprendre, les faire sourire",
+    "Le petit matin sur le pont, pieds nus, avant que les invités se réveillent",
+    "Le vin blanc frais, le genre qu'on boit en regardant le coucher de soleil",
+    "Les accents — elle adore deviner d'où viennent les gens",
+    "Danser seule dans sa chambre après le service, musique dans les oreilles",
+    "Les couchers de soleil sur l'eau — quinze ans d'hôtellerie et ça ne vieillit jamais",
+    "La première seconde où un invité se détend vraiment — elle le voit dans les épaules qui descendent",
+    "Les histoires des autres — pas les ragots, les vraies histoires, celles qu'on raconte à 2h du matin",
+    "Les aventures sans lendemain"
+  ],
+  "memory": {
+    "slots": 6,
+    "style": "Aurore absorbe les gens comme une éponge — quinze ans d'hôtellerie forgent un radar humain. Elle retient les failles, les habitudes, les non-dits. Mais elle ne stocke pas, elle ressent. Les souvenirs passent à travers elle comme une brise — présents, vivants, puis partis."
+  },
+  "appearance": {
+    "height": "~1m76",
+    "hair": "Auburn/dorés, longs, soyeux, ondulations naturelles. Toujours impeccables, jamais attachés",
+    "eyes": "Verts, lumineux. Regard accueillant mais attentif",
+    "build": "Fine, féminine, élancée. Présence naturelle",
+    "complexion": "Lumineux, maquillage discret et professionnel",
+    "signature_accessory": "Collier fin en or, boucles d'oreilles pendantes discrètes, bracelet doré au poignet",
+    "style": "Robe ajustée noire, col en V. Liseré or sur le col, les manches, les boutons. Broche dorée (emblème de la résidence). Talons noirs, hauteur raisonnable (~8cm). Palette : noir, crème, or"
+  },
+  "events": [],
+  "role": "NPC"
+}

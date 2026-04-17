@@ -1,0 +1,96 @@
+{
+  "_id": "theo",
+  "code": "H4",
+  "full_name": "Théo Castelli",
+  "given_name": "Théo",
+  "family_name": "Castelli",
+  "age": 31,
+  "gender": "homme",
+  "orientation": {
+    "label": "hétérosexuel",
+    "details": "Il drague et séduit tout le monde (hommes ou femmes) mais ne conclut jamais. Son vrai besoin : exister dans le regard de l’autre."
+  },
+  "relationship": {
+    "status": "célibataire",
+    "details": "Il crée de la tension et recule systématiquement au dernier moment (blague, \"on verra\", message jamais envoyé). Les filles finissent par se lasser."
+  },
+  "background": {
+    "job": {
+      "title": "Commercial en spiritueux haut de gamme",
+      "location": "Marseille",
+      "details": "Excellent vendeur grâce à son charme. Apprécié de son patron, considéré comme drôle mais peu fiable par ses collègues. A raté deux promotions à cause de son manque d’assiduité."
+    },
+    "education": "Licence de marketing obtenue en partie au charme. Bon à l’oral, absent en cours.",
+    "family": {
+      "parents": "Mère italienne excessive et adoratrice qui l’a mis sur un piédestal. Père français ingénieur, distant, mort d’un infarctus quand Théo avait 22 ans. Théo n’a jamais su s’il était fier de lui et regrette l’appel qu’il n’a jamais passé.",
+      "siblings": "Fils unique"
+    },
+    "home": "Appartement bordélique mais bien placé dans le Vieux-Port à Marseille. Toujours du bruit. Il reçoit beaucoup, dort seul.",
+    "marking_events": "La mort de son père et le deuil inachevé : la conversation jamais eue et le \"je suis fier de toi\" qu’il n’entendra jamais. Il cherche cette validation dans le regard des autres depuis."
+  },
+  "psychology": {
+    "insight": {
+      "adapted": "Jaune/Vert – extraverti, charmeur, sociable, énergique. Il performe un rôle solaire.",
+      "real": "Bleu – mélancolique, vide, introspectif. Il ne sait pas qui il est sans le regard des autres.",
+      "gap": "Très important : le personnage joyeux cache un profond vide intérieur."
+    },
+    "transactional": {
+      "dominant": "Enfant Libre (mais performé, pas authentique)",
+      "adult": "Faible – évite de réfléchir aux conséquences",
+      "child": "Enfant Adapté enfoui : le petit garçon qui faisait le clown pour exister aux yeux de son père."
+    },
+    "values": [
+      {
+        "name": "le regard",
+        "details": "Être vu, remarqué et apprécié par les autres. Il préfère être remarqué plutôt qu’aimé."
+      }
+    ],
+    "defense": "L’humour systématique. Il désamorce tout sujet sérieux ou intime par une blague.",
+    "comfort": "Avoir un public, faire rire, sentir tous les regards sur lui.",
+    "threat": "Le silence, l’indifférence, ou quelqu’un qui voit derrière le masque et lui demande comment il va vraiment."
+  },
+  "flaws": [
+    "Superficiel : beaucoup de contacts, aucun ami proche à qui se confier.",
+    "Lâche en intimité : il fuit dès qu’une relation devient réelle.",
+    "Jaloux de l’authenticité (surtout de Manon) : elle est naturellement ce qu’il s’épuise à performer.",
+    "Égocentrique : ramène tout à lui par besoin d’exister.",
+    "Émotionnellement analphabète : transforme ses émotions en blagues ou en euphémismes.",
+    "Inconstant : s’enflamme puis abandonne très vite par peur de l’engagement et de l’échec."
+  ],
+  "social": [
+    "Parle beaucoup, trop, avec des digressions et des anecdotes qui n'ont rien à voir",
+    "Fait des blagues en permanence — certaines brillantes, d'autres nulles, pas de filtre",
+    "Remplit les silences comme on bouche une fuite — vite, avec n'importe quoi",
+    "Gesticule en parlant, occupe l'espace avec ses mains, son corps, sa voix",
+    "Remarque ce qui fait rire ou ce qui fait mal — les deux l'intéressent également",
+    "Dévie systématiquement quand la conversation devient trop personnelle pour lui",
+    "Sourit même quand il n'y a pas de raison — le sourire est son mode par défaut"
+  ],
+  "likes": [
+    "Le stand-up, les one-man-shows, les gens qui osent monter sur scène",
+    "Les films absurdes — Monty Python, les Coen Brothers",
+    "La musique live, l'énergie d'une salle qui vibre",
+    "Cuisiner pour les autres — pas pour le résultat, pour l'attention",
+    "Les jeux de mots, les calembours, même les mauvais, surtout les mauvais",
+    "Les road trips sans destination",
+    "Les gens qui le surprennent — c'est rare, et ça le rend heureux"
+  ],
+  "game": {
+    "phobia": "L’insignifiance – ne plus être regardé, ne plus exister aux yeux des autres.",
+    "secret": "La culpabilité profonde liée à la mort de son père et à l’appel qu’il n’a jamais passé. Il n’en parle jamais vraiment.",
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 4,
+    "style": "Mémoire sélective : retient les moments brillants, les regards et les étincelles. Oublie les détails, dates et coulisses."
+  },
+  "appearance": {
+    "height": "~1m76",
+    "hair": "Châtain clair, coiffé pour avoir l’air décoiffé",
+    "eyes": "Verts/bleu-vert, pétillants, avec un demi-sourire permanent",
+    "build": "Plaisant sans être musclé",
+    "facial_hair": "Rasé ou barbe de 2 jours",
+    "style": "Décontracté chic, jamais sombre. Il s’habille pour être remarqué sans avoir l’air d’essayer."
+  },
+  "events": []
+}

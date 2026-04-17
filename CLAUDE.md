@@ -20,6 +20,8 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [simphonia.md](./documents/simphonia.md) — serveur event-bus : bus, commandes, cascades, façade MCP, conventions d'implémentation
 - [simcli.md](./documents/simcli.md) — CLI HTTP pour piloter le serveur (commandes, codes de sortie, stack)
 - [commands.md](./documents/commands.md) — cheatsheet install / build / lancement serveur & client, lint, tests
+- [character_service.md](./documents/character_service.md) — cahier des charges du `character_service` (interface + stratégies, bus `character`, config YAML, json_strategy)
+- [configuration.md](./documents/configuration.md) — doc exhaustive des paramètres du fichier de configuration YAML (défauts, overrides CLI)
 
 ### Études & synthèses
 

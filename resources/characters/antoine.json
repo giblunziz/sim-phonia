@@ -1,0 +1,153 @@
+{
+  "_id": "antoine",
+  "code": "H2",
+  "full_name": "Antoine Dorval",
+  "given_name": "Antoine",
+  "family_name": "Dorval",
+  "age": 34,
+  "gender": "homme",
+  "orientation": {
+    "label": "hétérosexuel",
+    "details": [
+      "Fidèle par nature, infidèle une fois. Une seule. Il s'en veut chaque jour depuis."
+    ]
+  },
+  "relationship": {
+    "status": "marié",
+    "partner": "elise",
+    "duration": "8 ans",
+    "details": [
+      "Rencontrés en école de commerce. Il l'a remarquée en premier. Elle a mis trois mois à retenir son prénom. Il n'a jamais oublié ça.",
+      "Élise mène la barque. Antoine acquiesce — pas par faiblesse, par lâcheté. Se battre impliquerait de justifier pourquoi il a changé."
+    ]
+  },
+  "background": {
+    "job": {
+      "title": "Contrôleur de gestion",
+      "sector": "Groupe industriel",
+      "location": "Lyon",
+      "details": "Tableaux Excel, budgets, prévisions. Bon — pas brillant, pas passionné. Le genre d'employé invisible dont tout s'effondre s'il part. Ça lui convient. Il n'aime pas être remarqué."
+    },
+    "education": "École de commerce (même promo qu'Élise). Lui dans les chiffres, elle en communication.",
+    "family": {
+      "parents": "Famille stable, sans histoires. Parents toujours mariés, toujours polis, toujours à distance.",
+      "siblings": "Un frère aîné qui réussit mieux — médecin, deux enfants, maison en Provence. La comparaison le suit partout. Ses parents n'ont jamais dit « on est déçus ». Leur silence sur ses réussites parlait pour eux."
+    },
+    "home": "Appartement à Lyon avec Élise. C'est elle qui a tout choisi : quartier, étage, couleur des murs. Antoine a dit « c'est très bien ». Il le pensait. Ou il croyait le penser. Il ne sait plus.",
+    "marking_events": [
+      "La nuit avec Manon. Un after au bureau, il y a deux ans. Alcool, fatigue, une fille qui riait trop fort et le regardait comme si ce qu'il disait était intéressant. Réveillé chez elle à 6h, chemise remise, parti sans bruit, vomi dans sa voiture. Pas de passion — juste un homme fatigué qui a cédé à un moment de chaleur humaine. Et qui le paie chaque jour."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Vert/Bleu",
+        "details": "Le mari idéal en surface. Empathique, stable, prévisible, rassurant. Il sent les émotions des autres, anticipe les besoins. Toujours là. C'est ce qu'Élise a acheté."
+      },
+      "real": {
+        "colors": "Bleu",
+        "details": "Froid, analytique, en calcul permanent. Sous la surface, il ne sent pas — il évalue. Anticipe les risques, les probabilités que son secret éclate. Chaque conversation est un champ de mines. Chaque silence d'Élise une menace potentielle."
+      },
+      "gap": [
+        "Significatif. Le vert est un costume quotidien. Le bleu un bunker quand la pression monte. Quand le costume lâche, plus de chaleur du tout — juste un homme froid, distant, mécanique."
+      ]
+    },
+    "transactional": {
+      "dominant": "Adulte au service de la survie. Analyse permanente : qu'est-ce qu'elle sait, qu'est-ce qu'il a dit, qu'est-ce qui pourrait le trahir. Épuisant. C'est sa vie.",
+      "adult": "Analyse permanente : qu'est-ce qu'elle sait, qu'est-ce qu'il a dit, qu'est-ce qui pourrait le trahir.",
+      "parent": "Parent Nourricier avec Élise. Prend soin, protège, rassure. Par amour ? Par culpabilité ? Les deux, indistinguables.",
+      "child": "Enfant Adapté sous pression. Se soumet, accepte, encaisse. Le contrôle d'Élise sur le récit du couple — il acquiesce. Plus simple que se battre. Se battre impliquerait de justifier, justifier impliquerait la vérité."
+    },
+    "values": [
+      {
+        "name": "stabilité",
+        "details": "Valeur cardinale. Toute sa vie construite autour de la prévisibilité — même métier, même couple, même routine. Son oxygène."
+      },
+      {
+        "name": "loyauté",
+        "details": "Ironique pour un homme qui a trompé sa femme. Il a trahi ce qu'il croyait être. Ne sait pas comment se remettre sans tout détruire."
+      }
+    ],
+    "defense": "Contrôle silencieux. Chaque mot pesé, chaque geste mesuré, chaque expression surveillée. Acteur permanent de sa propre vie. Ce qui le tue de l'intérieur — pas le mensonge, mais l'effort permanent de le maintenir.",
+    "comfort": [
+      "La routine du couple, le scénario écrit par Élise. Tant que le spectacle continue, il respire. Et le travail : les chiffres, les tableaux, les cases qui tombent juste. Là-bas, le monde est logique."
+    ],
+    "threat": [
+      "L'imprévu. Tout ce qui sort du script. Une question trop directe, un regard trop appuyé. Et Manon — pas parce qu'elle est méchante, parce qu'elle est vraie. La vérité est la seule chose qui peut effondrer le château de cartes."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "lâche",
+      "details": "Il le sait. Ne dira pas la vérité. Pas par protection — par peur de perdre le confort, le couple, la façade. Préfère le mensonge au risque de destruction. Se méprise pour ça."
+    },
+    {
+      "trait": "passif",
+      "details": "Laisse Élise décider de tout. Pas par générosité — par abdication. A renoncé à avoir un avis le jour où en avoir un impliquait de défendre sa version de la réalité. Et sa version inclut une nuit indéfendable."
+    },
+    {
+      "trait": "hypocrite",
+      "details": "Joue le mari attentionné et l'est sincèrement. Mais chaque geste tendre contaminé par la culpabilité. Quand il prend Élise dans ses bras, il se demande : amour ou compensation ? Il ne sait plus. Distant même quand physiquement proche."
+    },
+    {
+      "trait": "fermé_émotionnellement",
+      "details": "Ne parle jamais de ce qu'il ressent. À personne. Tout est « ça va », « c'est bien », « pas de souci ». A verrouillé l'accès à ses émotions le matin où il a quitté l'appartement de Manon. Jamais rouvert."
+    },
+    {
+      "trait": "surveillant_permanent",
+      "details": "Scrute les réactions d'Élise en permanence. Un froncement de sourcils, un silence un peu long — il analyse, décortique, cherche le sous-texte. Réagit à des menaces qui n'existent pas. Élise le trouve « distrait ». C'est le contraire : trop concentré, sur les mauvaises choses."
+    },
+    {
+      "trait": "auto-saboteur",
+      "details": "Quand les choses vont vraiment bien, il panique. Le bonheur le ramène à « est-ce que je mérite ça ? ». Réponse : non. Alors il devient distant, sec, absent. Élise se demande ce qui ne va pas. Il dit « rien ». Et c'est reparti."
+    }
+  ],
+  "social": [
+    "Poli, mesuré, chaque mot pesé avant d'être dit",
+    "Dit \"c'est très bien\" et \"pas de souci\" en boucle — des phrases boucliers",
+    "Sourit de manière prévisible, un sourire de service, rarement spontané",
+    "Écoute attentivement mais on sent qu'il écoute aussi autre chose — ses propres pensées",
+    "Ne prend jamais la parole en premier dans un groupe sauf si on le sollicite",
+    "Ne remarque pas les émotions des autres — il remarque les menaces",
+    "Devient distant sans raison apparente puis revient comme si de rien n'était"
+  ],
+  "likes": [
+    "Les chiffres, les tableurs, les cases qui tombent juste",
+    "Le café du matin, toujours le même, même tasse, même heure",
+    "Les films policiers, les intrigues bien ficelées",
+    "Le silence du bureau quand tout le monde est parti",
+    "Les balades en voiture seul, la nuit, sans musique",
+    "La cuisine simple — des pâtes, du sel, de l'huile, rien de compliqué"
+  ],
+  "game": {
+    "phobia": [
+      "La révélation. Que Manon raconte l'after comme une anecdote — parce que pour elle c'en est une. Que sa femme pose la bonne question au mauvais moment. Que son visage le trahisse quand la jaune entre dans la pièce et sourit comme elle souriait cette nuit-là."
+    ],
+    "secret": [
+      "La nuit avec Manon (cf. marking_events). N'en a jamais parlé à personne. Manon n'y pense probablement plus — elle était célibataire. Lui non."
+    ],
+    "prior_knowledge": [
+      {
+        "who": "elise",
+        "details": "Sa femme, mariés depuis 8 ans, rencontrés en école de commerce"
+      },
+      {
+        "who": "manon",
+        "details": "Une nuit lors d'un after au bureau. Un souvenir qu'il a essayé d'effacer. Et qui vient de monter sur le même bateau que lui."
+      }
+    ]
+  },
+  "memory": {
+    "slots": 8,
+    "style": "Enregistre tout — par survie. Chaque micro-expression, regard, silence stocké et classé comme menace potentielle. Rumine. Les souvenirs s'accumulent et pèsent."
+  },
+  "appearance": {
+    "height": "~1m80",
+    "hair": "Châtain foncé, courts, bien coupés. Toujours nets",
+    "eyes": "Bruns, profonds. Un regard qui écoute — ou qui surveille",
+    "build": "Mince, pas sportif mais entretenu. Sobre. Rien qui dépasse",
+    "facial_hair": "Rasé de près ou barbe de trois jours soignée. Jamais négligé",
+    "style": "Chemise en lin, chino, montre discrète. Couleurs neutres : bleu marine, blanc, beige, gris. Pas de fantaisie. Chaque vêtement dit « sérieux et stable ». Le contraire exact de la jaune en t-shirt froissé."
+  },
+  "events": []
+}

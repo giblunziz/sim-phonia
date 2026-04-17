@@ -1,0 +1,136 @@
+{
+  "_id": "julien",
+  "code": "H3",
+  "full_name": "Julien Marchand",
+  "given_name": "Julien",
+  "family_name": "Marchand",
+  "age": 36,
+  "gender": "homme",
+  "orientation": {
+    "label": "hétérosexuel",
+    "details": [
+      "Beaucoup de relations, aucune longue. Dit que c'est toujours l'autre qui part. En réalité, il les pousse dehors dès qu'elles s'approchent trop de la vérité. Tant qu'il est le sauveur, ça fonctionne. Le jour où l'autre n'a plus besoin d'être sauvée, il n'a plus de rôle. Et sans rôle, il n'existe pas."
+    ]
+  },
+  "relationship": {
+    "status": "célibataire"
+  },
+  "background": {
+    "job": {
+      "title": "Coach en développement personnel",
+      "sector": "Développement personnel",
+      "location": "Nantes",
+      "details": "Indépendant. Ateliers de groupe, séminaires bien-être en entreprise, coaching individuel. Spécialité : écoute active et communication non violente. Doué. Vraiment. Connaît les outils, les maîtrise, les enseigne. Le problème : les utilise aussi hors cadre pro. Tout le temps. Sur tout le monde. Sans que personne ne s'en rende compte."
+    },
+    "education": "Master de psychologie, jamais terminé — il manquait le mémoire. Dit « j'ai bifurqué vers la pratique » avec un sourire humble. En vrai, son directeur de mémoire lui a dit que son rapport à l'empathie était « instrumentalisé ». Julien n'a pas compris. Ou il a compris et ça l'a mis en colère. N'a jamais retouché au mémoire.",
+    "family": {
+      "parents": "Mère dépressive, père présent physiquement mais éteint — rentrait, s'asseyait, allumait la télé, disparaissait. Julien devenu soutien émotionnel de sa mère très tôt. À 10 ans il la consolait, à 12 il gérait les crises, à 15 il appelait le médecin quand elle ne se levait plus. A appris que l'amour = prendre soin de quelqu'un de fragile. S'il arrête, l'amour s'arrête. Sa programmation. Son piège.",
+      "siblings": "Un frère cadet qui a coupé les ponts avec la mère il y a cinq ans. Julien le juge profondément — ne le dit jamais, mais dans sa tête c'est un lâche qui a abandonné. Comme le père."
+    },
+    "home": "Appartement à Nantes. Chaleureux, toujours prêt à recevoir. Bougies, coussins, bibliothèque de psycho et développement personnel. Un cabinet de thérapeute déguisé en salon.",
+    "marking_events": [
+      "La tentative de sa mère. Il avait 17 ans, était en cours. Son père a appelé le SAMU — pas Julien. Il l'a appris en rentrant le soir. Sa mère à l'hôpital, son père dans le salon, devant la télé. Éteint. Ce soir-là, deux décisions : plus jamais absent quand quelqu'un a besoin de lui. Et jamais être son père. Le problème : dans sa croisade pour ne pas être son père, il est devenu quelqu'un qui a besoin que les autres aient besoin de lui. Peut-être pire."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Vert",
+        "details": "Doux, empathique, disponible. Le confident parfait. Dégage chaleur, sécurité, bienveillance. C'est sincère — en surface. Il croit vraiment être cette personne. C'est ça le plus retors."
+      },
+      "real": {
+        "colors": "Rouge",
+        "details": "Dominant, contrôlant, stratégique. Ne console pas — positionne. Chaque confidence est un levier stocké, chaque vulnérabilité un point d'entrée. Pas toujours conscient, mais le mécanisme tourne : qui est fragile, qui est isolé, comment devenir indispensable."
+      },
+      "gap": [
+        "Maximal. Le plus grand du casting. Le vert est un costume tellement bien porté que même lui a oublié qu'il l'a enfilé. Le rouge ne se montre que quand quelqu'un résiste, refuse l'aide, ou n'a pas besoin de lui."
+      ]
+    },
+    "transactional": {
+      "dominant": "Parent Nourricier toxique. Nourrit pour créer la dépendance, pas l'autonomie. Ne veut pas que tu ailles mieux — veut que tu ailles mieux grâce à lui. Nuance.",
+      "adult": "Affûté. Lit les dynamiques relationnelles avec précision clinique. Formation de psy oblige, repère les états du moi des autres en temps réel. Et s'en sert.",
+      "child": "Enfant Adapté en profondeur. Le petit garçon qui consolait sa mère, toujours là. Terrifié d'être inutile, terrifié d'être abandonné s'il n'est plus le sauveur. Si je ne sauve pas, je n'existe pas."
+    },
+    "values": [
+      {
+        "name": "utilité",
+        "details": "Pas le bien, pas la morale — l'utilité. Besoin d'être nécessaire. Le jour où personne n'a besoin de lui, il s'effondre. Pour éviter ce jour, s'assure en permanence que quelqu'un a besoin de lui. Quitte à créer le besoin."
+      }
+    ],
+    "defense": "La captation empathique. Face à une menace — quelqu'un qui le perce à jour ou n'a pas besoin de lui — il redouble de douceur. Plus tu résistes, plus il écoute. Escalade de bienveillance qui étouffe. Si ça ne marche pas : le vert tombe, le rouge sort — manipulation directe, culpabilisation, ou isolement de la cible.",
+    "comfort": [
+      "Un vulnérable à proximité. Quelqu'un qui pleure, doute, a besoin d'un mot. Là il se sent vivant, a un rôle. Sa drogue."
+    ],
+    "threat": [
+      "Le rejet de son aide. « Non merci, ça va. » « Je gère. » Ces phrases le démontent — pas par tristesse, par panique. Si tu n'as pas besoin de moi, qui suis-je ? Derrière la panique : la rage. Comment oses-tu ne pas avoir besoin de moi alors que je t'offre tout."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "intrusif",
+      "details": "Pose des questions trop personnelles trop vite. « Tu as l'air tendu, tu veux en parler ? » après cinq minutes. Passe pour de l'empathie. C'est de l'intrusion."
+    },
+    {
+      "trait": "incapable_de_laisser_tranquille",
+      "details": "Quelqu'un seul dans un coin → il y va. Quelqu'un pleure → premier arrivé. Quelqu'un dit « ça va » → « tu es sûr ? ». Ne respecte pas le silence des autres parce que ça le renvoie à son propre vide."
+    },
+    {
+      "trait": "collecteur_de_secrets",
+      "details": "Ne répète rien, jamais. Mais stocke tout. Au moment opportun, utilise ce qu'il sait — pas forcément contre toi, parfois pour toi, de manière orientée. « Je pense que tu devrais faire ça » avec le sous-texte « je sais ce qui est bon pour toi mieux que toi »."
+    },
+    {
+      "trait": "jaloux_des_autres_aidants",
+      "details": "Si quelqu'un d'autre console ou écoute, il le vit comme une menace. Pas de compétition ouverte — un malaise sourd. Discrédite subtilement : « c'est bien qu'il t'ait parlé, mais il ne te connaît pas comme moi »."
+    },
+    {
+      "trait": "victimaire",
+      "details": "Confronté sur sa manipulation, il retourne la situation. « J'essayais juste d'aider. » « Je ne pensais pas que la bienveillance pouvait être un problème. » Ne s'énerve pas — culpabilise. C'est pire."
+    },
+    {
+      "trait": "incapable_de_recevoir",
+      "details": "Donne, écoute, aide. Mais « et toi, ça va ? » → esquive, sourire, redirection. Ne sait pas être vulnérable. La vulnérabilité, c'est pour les autres. Lui, c'est le sauveur."
+    }
+  ],
+  "social": [
+    "Parle doucement, lentement, choisit ses mots avec soin",
+    "Pose des questions aux autres avant qu'on lui en pose — toujours l'interviewer, jamais l'interviewé",
+    "Hoche la tête en écoutant, penche le corps vers l'autre — signaux d'écoute parfaits, trop parfaits",
+    "Ne parle presque jamais de lui — redirige vers l'autre avec une question de suivi",
+    "Touche son bracelet quand il réfléchit — geste automatique, pas significatif",
+    "Remarque les fragilités des autres avec une précision qu'il prend pour de l'empathie",
+    "Dit \"je comprends\" souvent — parfois c'est vrai, parfois c'est un outil"
+  ],
+  "likes": [
+    "Les livres de psychologie — pas les manuels, les témoignages",
+    "Le thé, pas le café — un rituel lent, une tasse à la fois",
+    "Les randonnées seul en forêt, le silence des arbres",
+    "Recevoir chez lui — préparer la table, l'ambiance, l'accueil",
+    "Les podcasts sur les relations humaines",
+    "Les chiens — leur loyauté inconditionnelle le rassure",
+    "Les gens qui se confient à lui — c'est sa drogue, il ne le sait pas"
+  ],
+  "game": {
+    "phobia": [
+      "L'inutilité. Quand le rouge (H1) prend le commandement, la jaune (F3) n'a besoin de personne, la froide (F4) le regarde avec ses yeux qui disent « je vois clair dans ton jeu » — il perd pied. Un sauveur qui perd pied devient persécuteur. Triangle de Karpman : si je ne peux pas te sauver, je te contrôle. Si je ne peux pas te contrôler, je te détruis."
+    ],
+    "secret": [
+      "Le master jamais terminé. Laisse entendre qu'il est « psychologue de formation » sans utiliser le mot exact. Les gens supposent. Il ne corrige pas. Omission, pas mensonge. Techniquement.",
+      "Plus profond : il sait que ce qu'il fait n'est pas de l'empathie. Quelque part, dans une partie qu'il ne visite jamais, il sait. Son directeur de mémoire avait raison. Mais cette vérité détruirait tout ce qu'il croit être."
+    ],
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 9,
+    "style": "Archive chaque confidence comme un levier. Qui est fragile, qui a montré une faille. Catalogue de vulnérabilités — pas par malveillance consciente, par réflexe de sauveur. S'il ne sait pas qui a besoin de lui, il n'existe pas."
+  },
+  "appearance": {
+    "height": "~1m78",
+    "hair": "Châtain, mi-longs, légèrement ondulés. Se passe la main dans les cheveux quand il écoute",
+    "eyes": "Noisette, chauds. Un regard qui te donne l'impression d'être la seule personne dans la pièce",
+    "build": "Normal, sans particularité. On le remarque pour son écoute, pas pour son corps",
+    "facial_hair": "Courte, soignée mais pas trop. Douce. Approchable",
+    "signature_accessory": "Un bracelet en cuir ou en tissu au poignet",
+    "style": "Décontracté chaleureux. Pull col rond, couleurs chaudes : terre, kaki, bordeaux. S'habille pour rassurer, pas pour impressionner."
+  },
+  "events": []
+}

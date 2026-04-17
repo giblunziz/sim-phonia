@@ -1,13 +1,9 @@
-"""MemoryService — RAG contextuel (vector store local ChromaDB).
-
-Usage interne uniquement. Accessible via la commande bus `memory/recall`.
-Pas d'import direct hors du module `simphonia.commands.memory` tant que la
-contrainte d'exposition n'est pas levée.
+"""ChromaMemoryService — RAG contextuel sur vector store local ChromaDB.
 
 Port simplifié de `symphonie.services.memory_service` :
 - pas de synchronisation MongoDB
 - pas de push / drop / reset (la mutation sera gérée par ailleurs, via cascades)
-- seul `recall` est exposé sur le bus
+- seul `recall` est exposé sur le bus (plus `stats` en observabilité)
 """
 
 import json
@@ -18,33 +14,24 @@ from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
 from simphonia.config import CHROMA_DIR, COLLECTION_NAME, DEFAULT_MEMORY_SLOTS, EMBEDDING_MODEL
+from simphonia.services.memory_service import MemoryService
 
 log = logging.getLogger("simphonia.memory")
 log_chroma = logging.getLogger("simphonia.chromadb")
 
 
-class MemoryService:
+class ChromaMemoryService(MemoryService):
     """RAG contextuel — vector store local ChromaDB."""
 
-    def __init__(self) -> None:
-        self._client: chromadb.ClientAPI | None = None
-        self._collection: chromadb.Collection | None = None
-        self._embedder: SentenceTransformer | None = None
-        self._ready = False
-
-    def init(self, force_cpu: bool = False) -> None:
-        """Initialise ChromaDB + modèle d'embedding. Idempotent."""
-        if self._ready:
-            return
-
-        log.info("Initialisation MemoryService...")
+    def __init__(self, force_cpu: bool = False) -> None:
+        log.info("Initialisation ChromaMemoryService...")
 
         CHROMA_DIR.mkdir(parents=True, exist_ok=True)
-        self._client = chromadb.PersistentClient(
+        self._client: chromadb.ClientAPI = chromadb.PersistentClient(
             path=str(CHROMA_DIR),
             settings=Settings(anonymized_telemetry=False),
         )
-        self._collection = self._client.get_or_create_collection(
+        self._collection: chromadb.Collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
         )
@@ -52,17 +39,10 @@ class MemoryService:
 
         device = "cpu" if force_cpu else None
         log.info("Chargement du modèle d'embedding : %s", EMBEDDING_MODEL)
-        self._embedder = SentenceTransformer(EMBEDDING_MODEL, device=device)
-        log.info("MemoryService prêt — %d documents indexés", self._collection.count())
+        self._embedder: SentenceTransformer = SentenceTransformer(EMBEDDING_MODEL, device=device)
+        log.info("ChromaMemoryService prêt — %d documents indexés", self._collection.count())
 
-        self._ready = True
-
-    @property
-    def ready(self) -> bool:
-        return self._ready
-
-    def embed(self, text: str) -> list[float]:
-        assert self._embedder is not None, "MemoryService non initialisé"
+    def _embed(self, text: str) -> list[float]:
         return self._embedder.encode(text, normalize_embeddings=True).tolist()
 
     def recall(
@@ -75,25 +55,6 @@ class MemoryService:
         factor: float = 1.0,
         max_distance: float | None = None,
     ) -> list[dict]:
-        """Récupère les souvenirs pertinents d'un personnage pour un contexte donné.
-
-        Args:
-            from_char: personnage qui se souvient (filtre metadata `from`)
-            context: texte de contexte (événement, affirmation, situation)
-            top_k: nombre max de résultats (défaut: DEFAULT_MEMORY_SLOTS)
-            about: filtre sur une cible unique
-            participants: filtre sur les participants de l'activité (+ soi-même)
-            factor: multiplicateur sur top_k pour élargir la fenêtre de recherche
-            max_distance: distance cosine max pour filtrer le bruit
-
-        Returns:
-            Liste de dicts {value, about, category, activity, scene, distance}
-            triés par pertinence (distance croissante).
-        """
-        if not self._ready:
-            log.warning("MemoryService non initialisé")
-            return []
-
         k = top_k or DEFAULT_MEMORY_SLOTS
         n_results = max(int(k * factor), 1)
 
@@ -107,12 +68,11 @@ class MemoryService:
         else:
             where = {"from": from_char}
 
-        assert self._collection is not None
         count = self._collection.count()
         if count == 0:
             return []
 
-        query_embedding = self.embed(context)
+        query_embedding = self._embed(context)
 
         log_chroma.debug("=" * 60)
         log_chroma.debug("RECALL REQUEST")
@@ -185,15 +145,9 @@ class MemoryService:
         return memories
 
     def stats(self) -> dict:
-        if not self._ready:
-            return {"status": "not_initialized"}
-        assert self._collection is not None
         return {
             "status": "ready",
             "documents": self._collection.count(),
             "embedding_model": EMBEDDING_MODEL,
             "chroma_dir": str(CHROMA_DIR),
         }
-
-
-memory_service = MemoryService()

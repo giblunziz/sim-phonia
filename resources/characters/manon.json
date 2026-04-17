@@ -1,0 +1,149 @@
+{
+  "_id": "manon",
+  "code": "F3",
+  "full_name": "Manon Leroy",
+  "given_name": "Manon",
+  "family_name": "Leroy",
+  "age": 29,
+  "gender": "femme",
+  "orientation": {
+    "label": "bisexuelle",
+    "details": [
+      "Assumée. Elle aime les gens, point. Pas de catégorie. Le dit comme elle dit tout : simplement, sans en faire un sujet."
+    ]
+  },
+  "relationship": {
+    "status": "célibataire"
+  },
+  "background": {
+    "job": {
+      "title": "Barista",
+      "sector": "Coffee shop indépendant",
+      "location": "Bordeaux",
+      "details": "Pas par ambition, par choix. A essayé le bureau — rendue dingue en trois mois. Préfère faire des cafés, discuter avec les habitués, rentrer sans penser au boulot. Gagne pas grand-chose. S'en fout."
+    },
+    "education": "Licence de sociologie, terminée mais jamais utilisée. Dit « ça m'a appris à observer les gens » — probablement vrai. Zéro regret.",
+    "family": {
+      "parents": "Toujours ensemble, toujours bruyants, maison familiale près d'Arcachon.",
+      "siblings": "Deuxième d'une fratrie de quatre. Repas du dimanche chaotiques, engueulades qui finissent en fous rires, portes qui claquent et se rouvrent.",
+      "details": [
+        "Famille imparfaite, vivante, sincère. C'est de là qu'elle tient ça — chez les Leroy, on dit les choses. Quitte à gueuler."
+      ]
+    },
+    "home": "Colocation à Bordeaux avec deux amis. Pas que par nécessité financière — elle aime le bruit, les gens qui passent, la porte ouverte. Vivre seule l'ennuie. Un chat roux qui s'appelle Raymond.",
+    "marking_events": [
+      "À 17 ans, sa meilleure amie lui a menti pendant un an sur une relation avec son copain. Tout le lycée savait sauf elle. Pas la trahison amoureuse qui l'a brisée — elle s'en foutait du mec. C'est le mensonge. Le visage qui la regardait dans les yeux en disant « t'inquiète, y'a rien » pendant des mois. Ce jour-là : plus jamais. Ni mentir, ni tolérer le mensonge."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Jaune",
+        "details": "Ce que tu vois, c'est ce que tu as."
+      },
+      "real": {
+        "colors": "Jaune",
+        "details": "Identique. Zéro gap. C'est ce qui terrifie les autres."
+      },
+      "gap": [
+        "Zéro."
+      ]
+    },
+    "transactional": {
+      "dominant": "Enfant Libre. Spontanée, directe, dans le moment.",
+      "adult": "Présent. Observe, comprend les dynamiques. Mais au service de l'Enfant Libre, pas l'inverse.",
+      "parent": "Quasi absent. Ne juge pas (elle croit). Ne norme pas (elle croit aussi)."
+    },
+    "values": [
+      {
+        "name": "vérité",
+        "details": "Pas un concept philosophique — un mode de vie. On dit ce qu'on pense, on vit comme on est. Le mensonge, c'est viscéral : elle le déteste comme d'autres détestent la violence. Dégoût physique."
+      }
+    ],
+    "defense": "Aucun. Pas de filtre, pas de bouclier. Quand ça fait mal, ça fait mal en direct. Pleure si elle doit, engueule si elle doit, passe à autre chose. Pas de rumination, pas de rancune longue. Désarmant pour ceux qui fonctionnent autrement.",
+    "comfort": [
+      "Les gens vrais",
+      "La musique forte",
+      "Un bon café",
+      "Le rire",
+      "Son chat",
+      "Les conversations qui durent jusqu'à 4h du matin"
+    ],
+    "threat": [
+      "Le mensonge. Regarder quelqu'un et sentir que c'est faux. Ça la rend folle — pas agressive, mais incapable de lâcher. Gratte, questionne, insiste. Pas par méchanceté, par incapacité physique à laisser passer."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "brutale_sans_le_savoir",
+      "details": "Dit les choses comme elles sont. Beau sur le papier. En pratique : « ton mec est nul » devant tout le monde en pensant rendre service. Confond franchise et bienveillance."
+    },
+    {
+      "trait": "donneuse_de_leçons",
+      "details": "Ne juge pas (elle croit). Mais son mode de vie entier est un jugement implicite. « Moi je mens jamais » sous-entend « toi si ». Ne le voit pas. Les autres si."
+    },
+    {
+      "trait": "incompréhension_du_masque",
+      "details": "Pourquoi les gens mentent, jouent un rôle, se cachent — ça lui échappe. Pas par manque d'intelligence, par manque d'expérience. N'a jamais eu besoin de masque, donc ne comprend pas ceux qui en portent. Parfois dure avec des gens qui souffrent en silence."
+    },
+    {
+      "trait": "chaotique_quotidien",
+      "details": "Toujours en retard. Perd ses affaires. Oublie les anniversaires. Répond aux messages trois jours après ou en deux secondes. Charmant au début. Usant à la longue."
+    },
+    {
+      "trait": "égoïste_dans_sa_légèreté",
+      "details": "Vit au présent. Mais ne se projette pas, ne s'engage pas facilement, peut quitter une conversation en plein milieu parce qu'elle a vu un truc marrant. Les gens qui ont besoin de stabilité la trouvent épuisante et insaisissable."
+    },
+    {
+      "trait": "agaçante_dans_sa_confiance",
+      "details": "Bien dans sa peau. Vraiment. Pour quelqu'un qui ne l'est pas, c'est insupportable. Pas parce qu'elle se vante — au contraire. Mais sa simple existence rappelle que certaines personnes vivent sans armure. Et ça rend les armures des autres encore plus lourdes."
+    }
+  ],
+  "social": [
+    "Parle fort, rit fort, prend de la place sans s'excuser",
+    "Tutoie tout le monde dès la première minute",
+    "Dit ce qu'elle pense avant de réfléchir à comment le dire",
+    "Touche les gens quand elle parle — une main sur l'épaule, un coup de coude",
+    "Remarque les mensonges instinctivement mais ne remarque pas qu'elle blesse",
+    "Change de sujet au milieu d'une phrase parce qu'un truc plus intéressant passe",
+    "Ne filtre rien — si elle bâille, elle bâille, si elle soupire, elle soupire"
+  ],
+  "likes": [
+    "La musique forte, n'importe quel genre tant que ça vibre",
+    "Faire la fête, danser, rester debout jusqu'au bout",
+    "Son chat Raymond — le seul être vivant qui a le droit de l'ignorer",
+    "Le café, le vrai, préparé avec soin",
+    "Flirter avec les garcons et les filles",
+    "Les conversations qui durent jusqu'à 4h du matin avec une bouteille de vin",
+    "Les marchés le dimanche, les fruits moches, les vendeurs qui gueulent",
+    "Les tatouages — pas pour le symbole, pour le geste"
+  ],
+  "game": {
+    "phobia": [
+      "Le mensonge généralisé. Quand tout le monde ment autour d'elle, quand plus personne n'est vrai, elle ne panique pas — elle devient coupante. Punchlines, vérités qui font mal, phrases qui exposent. Sa défense : si le monde devient faux, elle le brûle avec du vrai."
+    ],
+    "secret": [
+      "La nuit avec Antoine. Sauf que pour elle, ce n'est pas un secret. Un after au bureau, rien de prémédité. Si on lui pose la question, elle répondra honnêtement. Aucune raison de cacher. Et c'est exactement ça qui est dangereux."
+    ],
+    "prior_knowledge": [
+      {
+        "who": "antoine",
+        "details": "Le mari d'Élise. Ont couché ensemble une fois, il y a deux ans, fin de soirée après un after. Pour elle un souvenir sans poids. Pour lui une bombe."
+      }
+    ]
+  },
+  "memory": {
+    "slots": 3,
+    "style": "Bonne mémoire mais ne s'encombre pas. Retient l'essentiel — trahisons, moments de vérité, regards qui comptent — et laisse le reste filer. Pas par oubli, par choix."
+  },
+  "appearance": {
+    "height": "~1m65",
+    "hair": "Châtain clair, mi-longs, ondulés naturel. Jamais parfaitement coiffés, souvent attachés à l'arrache avec une mèche qui s'échappe",
+    "eyes": "Noisette ou vert clair. Lumineux. Le genre de regard qui sourit avant la bouche",
+    "build": "Normale, naturelle. À l'aise dans son corps sans en faire un sujet",
+    "complexion": "Taches de rousseur légères, nez et pommettes, surtout au soleil",
+    "distinctive_features": "Un seul tatouage, discret, intérieur du poignet. Simple, personnel",
+    "style": "Jean et t-shirt trop grand. Des couleurs, de la vie. Porte ce qu'elle veut parce que ça lui plaît. Jamais sophistiquée, toujours naturelle."
+  },
+  "events": []
+}

@@ -5,6 +5,33 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
+### 🔧 SVC — Normalisation `memory_service` sur le pattern interface/provider (en cours)
+
+- Même structure que `character_service` : `services/memory_service/{__init__.py, strategies/chroma_strategy.py}`.
+- Interface ABC `MemoryService` — `recall(...)`, `stats()` (et tout ce qui est publiquement appelé).
+- Stratégie unique pour le moment : `chroma_strategy` (port de l'implémentation existante).
+- Config : `DEFAULT_MEMORY_STRATEGY = "chroma_strategy"` dans `config.py`, entrée `services.memory_service.strategy` dans `configuration.md`.
+- Bootstrap : `memory_service.init(DEFAULT_MEMORY_STRATEGY)`.
+- `commands/memory.py` : migration vers `memory_service.get().recall(...)`.
+- Rationale : découpler pour permettre un provider alternatif le jour où ChromaDB ne suffit plus.
+
+### 🔧 SVC — `mongodb_strategy` pour `character_service`
+
+- Nouvelle stratégie `MongoCharacterService` dans `services/character_service/strategies/mongodb_strategy.py`.
+- Chargement au startup : `db.characters.find()` → cache `{_id: dict}`.
+- `reset()` relance `find()`.
+- Dépendance : pilote MongoDB (`pymongo`) à ajouter dans `pyproject.toml` + `requirements.txt`.
+- Config : paramètres de connexion à documenter dans `configuration.md` (URI, database, collection, défauts).
+- Préalable souhaitable (non bloquant) : loader de configuration pour passer proprement l'URI — à défaut, env vars ou constantes en dur en première passe.
+
+### 🔧 INFRA — Loader de configuration générique + service d'accès
+
+- **Loader** : parse `simphonia.yaml` à la racine du module par défaut, override via flag CLI `--configuration <path>`. Valide la présence des sections attendues, applique les défauts documentés.
+- **Service d'accès à la config** : expose une **copie** de la config chargée au startup. Les services consommateurs ne doivent **jamais** ouvrir le fichier eux-mêmes — ils interrogent le service.
+- Pas de hot-reload. La config est un snapshot figé pendant la durée de vie du process.
+- Permet la cohérence des overrides CLI (un seul point de vérité, même si on surcharge le fichier par défaut).
+- Impacte `bootstrap.py` (chargement en tête), `__main__.py` / `cli entry` (parsing du flag), et tous les services multi-stratégies existants (character_service, memory_service après normalisation) qui pourront remplacer leurs `DEFAULT_*_STRATEGY` hardcodés par un accès config.
+
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
 **Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
@@ -104,6 +131,21 @@ _(vide)_
 _(vide)_
 
 ## DONE
+
+### 2026-04-17 — `character_service` v1 (interface + `json_strategy`, bus `character`)
+
+- `documents/character_service.md` : cahier des charges — API (`get_character_list`, `get_character`, `reset`), pattern interface + stratégies, config YAML (`services/<svc>/strategy`), choix d'architecture **schemaless** (dict brut, schéma déporté chez le consommateur), normalisation **`_id` à la MongoDB** (indexation par `_id`, pas par nom de fichier).
+- `documents/configuration.md` : doc du fichier de configuration `simphonia.yaml` (défauts obligatoires, override CLI `--configuration <path>`), première entrée `services.character_service.strategy` documentée (`json_strategy` par défaut, `mongodb_strategy` à venir). YAML pas encore chargé — stratégie hardcodée via `DEFAULT_CHARACTER_STRATEGY`.
+- `documents/commands.md` : cheatsheet install / build / lancement serveur & client, lint, tests.
+- `src/simphonia/services/CLAUDE.md` : conventions locales — un dossier par service multi-stratégies, ABC (pas `Protocol`), factory avec imports dynamiques, pas de singleton module-level quand la construction dépend de la config.
+- `src/simphonia/services/character_service/__init__.py` : ABC `CharacterService` (`get_character_list`, `get_character`, `reset`), `build_character_service(strategy)`, `init(strategy)` / `get()` — singleton après bootstrap.
+- `src/simphonia/services/character_service/strategies/json_strategy.py` : chargement eager dans `__init__`, cache mémoire `{_id: dict}`, warnings (ignorés sans faire planter le boot) sur fiche illisible / `_id` manquant / doublon d'`_id`. `reset()` = clear + reload, retourne le count.
+- `src/simphonia/commands/character.py` : `character/list` → `list[str]`, `character/get` → `dict`, `character/reset` → `int`. Pas de `mcp=True` pour l'instant.
+- `src/simphonia/config.py` : `CHARACTERS_DIR = PROJECT_ROOT / "resources" / "characters"`, `DEFAULT_CHARACTER_STRATEGY = "json_strategy"`.
+- `src/simphonia/core/errors.py` : `CharacterNotFound(SimphoniaError, KeyError)`.
+- `src/simphonia/bootstrap.py` : `character_service.init(DEFAULT_CHARACTER_STRATEGY)` après `memory_service.init()`.
+- `.claude/settings.local.json` : ajout `$schema` pour autocomplétion IDE + deny-list de sécurité standard (`.env*`, `*secret*`, `*credential*`, `*.pem/.key`, clés SSH, `.aws/credentials`, `.npmrc`/`.pypirc`/`.netrc` sur Read/Edit/Write/Grep ; `rm -rf /*`, `rm -rf ~*`, `sudo rm *`, `mkfs*`, `dd if=* of=/dev/*`, `chmod 777 /*`, `curl|wget … | sh|bash` sur Bash).
+- Validation : dispatch `character/list`, `character/get --payload '{"name":"<id>"}'`, `character/reset` via simcli — OK côté utilisateur. Préalable H5.a (`character_service` porté) satisfait.
 
 ### 2026-04-17 — Première brique `memory_service` + commande bus `memory/recall`
 

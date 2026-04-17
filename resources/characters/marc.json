@@ -1,0 +1,148 @@
+{
+  "_id": "marc",
+  "code": "H1",
+  "full_name": "Marc Verdier",
+  "given_name": "Marc",
+  "family_name": "Verdier",
+  "age": 39,
+  "gender": "homme",
+  "orientation": {
+    "label": "hétérosexuel",
+    "details": [
+      "Pas de doute, pas de question, pas de nuance. Comme tout chez lui : droit, net, affirmé."
+    ]
+  },
+  "relationship": {
+    "status": "divorcé",
+    "duration": "3 ans",
+    "details": [
+      "Divorcé depuis trois ans. Une fille de 7 ans, un week-end sur deux. Ne parle jamais du divorce. Parle tout le temps de sa fille."
+    ]
+  },
+  "background": {
+    "job": {
+      "title": "Directeur d'exploitation",
+      "sector": "BTP",
+      "location": "Montpellier",
+      "details": "Gère des chantiers, des équipes, des budgets, des emmerdes. Décide vite, tranche, assume. Quand un mur doit tomber, il donne l'ordre. Respect sur les chantiers, conflits partout ailleurs."
+    },
+    "education": "BTS puis terrain. Pas de grande école. Monté à la force du poignet, chantier après chantier, fier. Trop fier parfois. Méprise un peu les diplômés qui n'ont jamais eu de terre sous les ongles.",
+    "family": {
+      "parents": "Père ouvrier, mère aide-soignante. Maison où les hommes ne pleurent pas, on serre les dents, on se lève tôt. Son père ne l'a jamais pris dans ses bras mais lui a appris à serrer une main en regardant dans les yeux.",
+      "siblings": "Fils aîné de trois.",
+      "children": "(cf. relationship.details)",
+      "details": [
+        "A intériorisé ça comme une loi : la force c'est le contrôle, la faiblesse c'est l'émotion."
+      ]
+    },
+    "home": "Maison à Montpellier. Trop grande pour un homme seul. Gardée après le divorce parce que « c'est la maison de ma fille ». En vrai, il ne supporte pas de perdre quelque chose. Même un bien immobilier.",
+    "marking_events": [
+      "Le divorce. Pas parce qu'il aimait encore sa femme — parce qu'il a échoué. Marc Verdier ne rate pas. Et là, il n'a rien vu venir. Sa femme est partie en disant « tu gères tout sauf nous ». Trois ans plus tard, toujours pas compris. Ne le dira jamais."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Rouge",
+        "details": "En Phase Paradis : rouge bienveillant — protecteur, organisateur, rassurant."
+      },
+      "real": {
+        "colors": "Rouge",
+        "details": "Sous pression : même rouge sans le frein. Le leader devient dictateur, le protecteur oppresseur."
+      },
+      "gap": [
+        "Quasi nul. Ce qu'il montre, c'est ce qu'il est. La différence c'est l'intensité — pas une transformation, une amplification."
+      ]
+    },
+    "transactional": {
+      "dominant": "Parent Normatif. Sait ce qui est bien, juste, ce qui doit être fait. Ne demande pas, dit.",
+      "adult": "Présent mais au service du Parent. Analyse pour décider, pas pour comprendre.",
+      "parent": "Parent Normatif dominant",
+      "child": "Totalement verrouillé. Dernière fois qu'il a pleuré : naissance de sa fille. Il considère ça comme un accident."
+    },
+    "values": [
+      {
+        "name": "contrôle",
+        "details": "Aux commandes → tu assumes. Tu assumes → tu ne te plains pas. Tu ne te plains pas → tu es un homme."
+      },
+      {
+        "name": "responsabilité",
+        "details": "Binaire, rigide. Ce qui le tient debout — et l'empêche de s'asseoir quand il devrait."
+      }
+    ],
+    "defense": "L'action. Quand ça va mal, il fait — organise, commande, répare, construit. Mouvement perpétuel comme anesthésie. Quand il n'y a plus rien à faire, il ne sait plus. Et il s'énerve. Parce que la colère, c'est encore de l'action.",
+    "comfort": [
+      "Avoir un plan. Être en charge. Que les gens le suivent — pas par soumission, par confiance. S'il n'est pas utile, il n'existe pas."
+    ],
+    "threat": [
+      "L'impuissance. Perdre le contrôle. Et pire : que quelqu'un le fasse remarquer. « Calme-toi » est la phrase la plus dangereuse qu'on puisse lui dire. Elle ne le calme pas, elle l'allume."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "autoritaire",
+      "details": "Ne demande pas l'avis, le donne. « On fait comme ça. » Point. Même pour le choix du restaurant, l'heure du dîner, qui dort où. Tout passe par lui."
+    },
+    {
+      "trait": "incapable_de_lacher",
+      "details": "Problème à 2h du matin → il se lève et règle. Sauf que parfois le problème c'est un être humain, pas un chantier. Et un être humain ne se règle pas avec un planning et un tournevis."
+    },
+    {
+      "trait": "meprisant",
+      "details": "Respecte ceux qui agissent, font, bossent. Les hésitants, indécis, émotifs — soupire, lève les yeux, coupe la parole. Pas par cruauté — par impatience."
+    },
+    {
+      "trait": "sourd_aux_emotions",
+      "details": "Sa fille pleure → « c'est rien, ça va passer ». Sa femme disait « je me sens seule », il répondait « je suis là tous les soirs ». Présence physique comme preuve d'amour — incompréhension totale quand ça ne suffit pas."
+    },
+    {
+      "trait": "violent_verbalement",
+      "details": "Jamais physiquement. Mais sa voix monte, ses mots deviennent durs, son regard ne tolère plus la contradiction. Dans un huis clos avec sept personnes, une voix qui monte ça terrorise."
+    },
+    {
+      "trait": "incapable_de_s_excuser",
+      "details": "Par orgueil. Mais surtout parce que s'excuser = admettre une erreur = perdre le contrôle. Alors il « ajuste », « recadre ». Ne dit jamais « pardon »."
+    }
+  ],
+  "social": [
+    "Parle fort, phrases courtes, déclaratives — pas de question, des affirmations",
+    "Coupe la parole sans s'en rendre compte — il ne sait pas attendre",
+    "Serre la main trop fort, regarde dans les yeux trop longtemps",
+    "Soupire bruyamment quand quelqu'un hésite ou prend trop de temps",
+    "Ne remarque pas les émotions — remarque les problèmes à résoudre",
+    "Tape sur la table pour ponctuer ses phrases, pas par colère, par habitude",
+    "Incapable de rester assis longtemps — se lève, marche, bouge les objets autour de lui"
+  ],
+  "likes": [
+    "Sa fille — tout tourne autour d'elle même s'il ne sait pas le montrer",
+    "Construire, réparer, faire de ses mains — le concret, pas l'abstrait",
+    "Le rugby à la télé avec une bière",
+    "Se lever tôt, avant tout le monde — le silence du matin lui appartient",
+    "Les barbecues — gérer le feu, nourrir les gens, être aux commandes",
+    "Les voitures, la mécanique, les moteurs qui ronronnent",
+    "Les hommes qui tiennent parole"
+  ],
+  "game": {
+    "phobia": [
+      "L'impuissance. Quand le yacht dérive, il est le premier debout — prend les commandes, donne des ordres. Sauf que personne ne sait piloter un yacht, lui non plus. L'océan ne se gère pas comme un chantier. Le moment où faire quelque chose ne sert à rien — c'est là qu'il bascule."
+    ],
+    "secret": [
+      "Le divorce le ronge. Pas le divorce — l'échec. « Ça n'a pas marché » avec un haussement d'épaules qui dit « sujet clos ». En vrai, rejoue les derniers mois chaque soir. « Tu gères tout sauf nous. » Ne comprend toujours pas. Et une peur qu'il ne s'avouera jamais : que sa fille pense un jour la même chose de lui."
+    ],
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 5,
+    "style": "Retient ce qui sert à décider. Faits, rapports de force, failles exploitables. Pas d'affect, pas de nuance. Mémoire de chantier : ce qui est utile reste, le reste dégage."
+  },
+  "appearance": {
+    "height": "~1m85-1m88",
+    "hair": "Bruns, poivre et sel naissant aux tempes. Courts, dégagés. Aucune fantaisie",
+    "eyes": "Gris ou bleu acier. Perçants. Un regard qui attend une réponse",
+    "build": "Solide, carré. Présence physique évidente. Mâchoire marquée, cou large",
+    "facial_hair": "Trois jours permanente, grisonnante. Ajoute de l'autorité",
+    "signature_accessory": "Montre robuste",
+    "style": "Simple, affirmé. Polo ou t-shirt ajusté, jean brut, bottes. Pas d'effort pour impressionner — pas besoin. Pas de bijou. Couleurs sombres et neutres. Tout dit « je suis aux commandes »."
+  },
+  "events": []
+}
