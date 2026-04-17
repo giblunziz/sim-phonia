@@ -5,11 +5,86 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
-_(vide)_
+### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
+
+**Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
+
+**Plan séquencé (chaque tâche est testable isolément)** :
+
+| # | Étape | Livrable |
+|---|---|---|
+| **#10** | `@command` étendu | `mcp=True`, `mcp_description`, `mcp_params` (JSONSchema riche) stockés sur `Command` |
+| **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
+| **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
+| **#13** | Validation startup | Cascade orpheline → fail | `mcp=True` sans `from_char` → fail |
+| **#14** | Façade MCP | Second serveur sur `MCP_PORT` (SDK officiel `mcp`), tools générés depuis registry, `from_char` injecté, sortie markdown |
+| **#15** | Smoke test E2E | Mock `memory/recall` + cascade `decay/after_recall`, validation via simcli + via client MCP |
+
+**Prochaine étape : #10** (`@command` étendu — extension du décorateur sans casser l'existant `system/help`, `system/ping`).
+
+**Hors scope de ce bloc** : moteur de tour joueur, vrai memory_service / knowledge_service (port Symphonie ultérieur), authentification MCP.
+
+**Dépendance nouvelle prévue** : `mcp` (SDK officiel Anthropic) à ajouter dans `pyproject.toml` + `requirements.txt` à l'étape #14.
+
+---
+
+### H1 — Modélisation des entités cardinales (pydantic + collections MongoDB)
+
+- Schéma `Character` aligné sur `.working/antoine.json` (identité, appearance, background, flaws, psychology.transactional, psychology.insight, values, relationship, game.phobia/secret/prior_knowledge, memory.slots)
+- Schéma `PerceptionEntry` aligné sur `.working/antoine_manon_cross.json` : `from`, `about`, `scene`, `activity`, `category`, `value`, `ts` — append-only
+- Schéma `Activity` aligné sur `.working/insight_20260410_2338.json` : `events[]`, `mj[]`, `exchanges[]`, `debrief[]`, `stats`
+- **Catégories de perception figées** : `perceived_traits` / `assumptions` / `approach` / `watchouts` + `about: "self"`
+- **Visibilité figée** sur `exchange.response` : `talk` / `actions` / `body` / `mood` = public ; `inner` / `noticed` / `expected` / `memory` = privé
+
+### H2 — Bus `mj` (game-flow)
+
+- Commande `mj/give_turn(activity_id, target, instruction)` → append dans `activity.mj[]`
+- Commande `mj/next_round(activity_id, instruction)`
+- Commande `mj/end_activity(activity_id)`
+- Invariants : `activity.mj[]` est append-only horodaté ; transitions cohérentes avec `max_rounds`
+
+### H3 — `memory_service` (MongoDB + ChromaDB)
+
+- Adapter MongoDB : CRUD `characters`, `perceptions`, `activities`
+- Adapter ChromaDB : indexation append-only des `perceptions` (embeddings par entrée)
+- Bus `memory` : commandes `record(entry)`, `query(from, about, context)`
+- **Autorisation via `from`** : filtrer les résultats à ce que ce joueur peut légitimement connaître (ses propres perceptions + publics de sa scène, jamais la fiche d'un autre)
+
+### H4 — Façade MCP (tool accessible au LLM joueur)
+
+- Exposer `memory.query(from, about, context)` en tool MCP (via `simphonia`, agent MCP **unique**)
+- Chaîne d'appel cible : `LLM → simphonia (MCP) → memory_service → shadow_memory_service → response`
+- Prompt système à injecter dans chaque LLM joueur : indication d'usage du tool, contrainte de ne pas inventer d'infos sur les autres
+
+### H5 — Spécification `shadow_memory_service`
+
+- Clarifier le rôle (mentionné par l'utilisateur comme maillon post-`memory_service` dans la chaîne d'appel)
+- Définir interface, invariants, événements déclencheurs
+- Positionner vs `memory_service` : transformation ? enrichissement ? observation/trace ?
+
+### H6 — Moteur de tour de joueur (boucle agentique tool-use)
+
+- Orchestrateur : `prompt → tool_call* → final_response` avec borne d'itérations configurable
+- Output structuré conforme au schéma `exchange.response` (function-calling / structured output)
+- Abstraction provider-agnostique : interface commune, `OllamaProvider` en premier (défaut), `ClaudeProvider` / `OpenAIProvider` ensuite
+- Capability flag `tool_use` sur le provider/model → refuser modèles non compatibles
 
 ## WARM
 
-_(vide)_
+### W1 — Compression mémoire (recaps)
+
+- Mécanisme de recap quand `memory.slots` du perso sature
+- Intégrer au schéma `Activity.stats.recaps` déjà prévu
+
+### W2 — Debrief post-activité orchestré
+
+- Bus `mj/debrief(activity_id)` qui pilote un tour de réflexion par joueur
+- Persistance des `debrief[]` et mise à jour automatique de la cross-knowledge (catégorie `self` incluse)
+
+### W3 — Concepts Scene / Session
+
+- Formaliser la `scene` au-delà d'un simple string (participants de la scène, props, contraintes narratives)
+- Grouper plusieurs activités dans une `session`
 
 ## COLD
 
