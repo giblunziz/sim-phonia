@@ -17,11 +17,8 @@ class MemoryService(ABC):
         self,
         from_char: str,
         context: str,
-        top_k: int | None = None,
         about: str | None = None,
         participants: list[str] | None = None,
-        factor: float = 1.0,
-        max_distance: float | None = None,
     ) -> list[dict]:
         """Retourne les souvenirs pertinents d'un personnage pour un contexte donné."""
 
@@ -39,7 +36,9 @@ def build_memory_service(service_config: dict) -> MemoryService:
             ChromaMemoryService,
         )
 
-        return ChromaMemoryService()
+        load_factor = float(service_config.get("load_factor", 1.0))
+        min_distance = float(service_config.get("min_distance", 1.0))
+        return ChromaMemoryService(load_factor=load_factor, min_distance=min_distance)
 
     raise ValueError(f"Unknown memory_service strategy: {strategy!r}")
 

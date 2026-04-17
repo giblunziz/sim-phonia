@@ -7,6 +7,7 @@
 .claude/
 .working/
 data/
+logs/
 
 # Python
 __pycache__/

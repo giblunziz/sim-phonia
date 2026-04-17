@@ -80,6 +80,14 @@ Le LLM ne voit qu'un seul tool. La complexité interne est invisible.
 
 Décisions techniques figées le 2026-04-16 (à respecter à toute extension future) :
 
+### Cache : stratégie provider-side
+
+Le cache est tenu par le **provider** (le service qui détient la donnée), jamais par le **consumer** (le service qui l'appelle). Un consumer appelle toujours le service provider directement à chaque besoin — c'est le provider qui décide de mettre en cache, d'invalider, ou de laisser passer.
+
+Exemple : le `chat_service` appelle `character_service.get()` à chaque tour sans garder de copie locale. Le `character_service` gère son propre cache et supporte un reset si une fiche est modifiée en cours de session. Le consumer ne voit jamais la différence.
+
+**Règle** : si tu te retrouves à mettre en cache une ressource issue d'un autre service dans ton service, c'est le signe que le cache doit être déplacé dans ce service source.
+
 ### Détection de `from_char`
 
 - **Convention par nom** : si la signature de la commande contient un paramètre nommé exactement `from_char`, le bus l'injecte automatiquement avant l'appel.

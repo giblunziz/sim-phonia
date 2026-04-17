@@ -22,6 +22,7 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [commands.md](./documents/commands.md) — cheatsheet install / build / lancement serveur & client, lint, tests
 - [character_service.md](./documents/character_service.md) — cahier des charges du `character_service` (interface + stratégies, bus `character`, config YAML, json_strategy)
 - [configuration.md](./documents/configuration.md) — doc exhaustive des paramètres du fichier de configuration YAML (défauts, overrides CLI)
+- [chat_service.md](./documents/chat_service.md) — cahier des charges du `chat_service` (dialogue 1-to-1 LLM/humain, cycle start/reply/stop, providers, schéma JSON)
 
 ### Études & synthèses
 

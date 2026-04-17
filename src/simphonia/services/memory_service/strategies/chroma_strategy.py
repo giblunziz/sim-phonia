@@ -14,6 +14,7 @@ from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
 from simphonia.config import CHROMA_DIR, COLLECTION_NAME, DEFAULT_MEMORY_SLOTS, EMBEDDING_MODEL
+from simphonia.core.errors import CharacterNotFound
 from simphonia.services.memory_service import MemoryService
 
 log = logging.getLogger("simphonia.memory")
@@ -23,7 +24,9 @@ log_chroma = logging.getLogger("simphonia.chromadb")
 class ChromaMemoryService(MemoryService):
     """RAG contextuel — vector store local ChromaDB."""
 
-    def __init__(self, force_cpu: bool = False) -> None:
+    def __init__(self, load_factor: float = 1.0, min_distance: float = 1.0, force_cpu: bool = False) -> None:
+        self._load_factor = load_factor
+        self._min_distance = min_distance
         log.info("Initialisation ChromaMemoryService...")
 
         CHROMA_DIR.mkdir(parents=True, exist_ok=True)
@@ -49,14 +52,18 @@ class ChromaMemoryService(MemoryService):
         self,
         from_char: str,
         context: str,
-        top_k: int | None = None,
         about: str | None = None,
         participants: list[str] | None = None,
-        factor: float = 1.0,
-        max_distance: float | None = None,
     ) -> list[dict]:
-        k = top_k or DEFAULT_MEMORY_SLOTS
-        n_results = max(int(k * factor), 1)
+        from simphonia.services import character_service
+
+        try:
+            char = character_service.get().get_character(from_char)
+            slots = int(char.get("memory", {}).get("slots", DEFAULT_MEMORY_SLOTS))
+        except CharacterNotFound:
+            slots = DEFAULT_MEMORY_SLOTS
+
+        n_results = max(int(slots * self._load_factor), DEFAULT_MEMORY_SLOTS)
 
         if about:
             where: dict = {"$and": [{"from": from_char}, {"about": about}]}
@@ -80,11 +87,11 @@ class ChromaMemoryService(MemoryService):
             json.dumps(
                 {
                     "from_char": from_char,
-                    "context": context[:200],
-                    "top_k": k,
-                    "factor": factor,
+                    "context": context,
+                    "slots": slots,
+                    "load_factor": self._load_factor,
                     "n_results": n_results,
-                    "max_distance": max_distance,
+                    "min_distance": self._min_distance,
                     "where": where,
                     "collection_count": count,
                 },
@@ -121,7 +128,7 @@ class ChromaMemoryService(MemoryService):
         for i, doc in enumerate(results["documents"][0]):
             meta = results["metadatas"][0][i]
             distance = results["distances"][0][i]
-            if max_distance is not None and distance > max_distance:
+            if distance < self._min_distance:
                 continue
             memories.append(
                 {
@@ -135,12 +142,13 @@ class ChromaMemoryService(MemoryService):
             )
 
         log.debug(
-            "%s recall (%d candidats → %d retenus, factor=%.1f, max_dist=%s)",
+            "%s recall (%d candidats → %d retenus, slots=%d, load_factor=%.1f, min_dist=%.2f)",
             from_char,
             len(results["documents"][0]),
             len(memories),
-            factor,
-            max_distance,
+            slots,
+            self._load_factor,
+            self._min_distance,
         )
         return memories
 

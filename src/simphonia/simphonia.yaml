@@ -1,3 +1,20 @@
+providers:
+  gemma4:
+    protocol: ollama
+    url: http://localhost:11434/api/chat
+    model: gemma4:e4b
+    max_tokens: 2048
+    temperature: 0.6
+    keep_alive: 5m
+  opus:
+    protocol: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-opus-4-6
+    max_tokens: 4096
+    temperature: 0.8
+    keep_alive: 1h
+
+
 services:
   character_service:
     strategy: mongodb_strategy
@@ -7,3 +24,11 @@ services:
 
   memory_service:
     strategy: chroma_strategy
+    load_factor: 1.5
+    min_distance: 0.7
+
+  chat_service:
+    model: "gemma4"
+    log:
+      path: "./logs/chat.log"
+      reset_on_startup: true

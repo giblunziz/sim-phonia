@@ -1,11 +1,13 @@
 from collections.abc import Callable
 from typing import Any, TypeVar
 
+from simphonia.core.cascade import Cascade, CascadeCallback, CascadePosition
 from simphonia.core.command import Callback, Command
 from simphonia.core.errors import CommandContractError
 from simphonia.core.registry import default_registry
 
 F = TypeVar("F", bound=Callback)
+G = TypeVar("G", bound=CascadeCallback)
 
 
 def command(
@@ -36,6 +38,46 @@ def command(
                 mcp=mcp,
                 mcp_description=mcp_description,
                 mcp_params=mcp_params,
+            )
+        )
+        return fn
+
+    return decorator
+
+
+def cascade(
+    *,
+    bus: str,
+    code: str,
+    position: CascadePosition,
+    priority: int = 0,
+) -> Callable[[G], G]:
+    """Décore une fonction comme intercepteur de commande bus.
+
+    Args:
+        bus: Nom du bus cible.
+        code: Code de la commande ciblée.
+        position: ``"before"`` (avant le call) ou ``"after"`` (après).
+        priority: Ordre relatif entre cascades — plus petit = plus tôt.
+                  En cas d'égalité, l'ordre de discovery est utilisé.
+
+    La cascade ``before`` reçoit les mêmes kwargs que la commande.
+    Elle peut lever :class:`~simphonia.core.cascade.ShortCircuit` pour
+    court-circuiter la commande principale et renvoyer un résultat immédiat.
+
+    La cascade ``after`` reçoit les mêmes kwargs que la commande **plus**
+    un kwarg ``result`` contenant la valeur retournée par le call.
+    """
+
+    def decorator(fn: G) -> G:
+        target_bus = default_registry().get_or_create(bus)
+        target_bus.register_cascade(
+            Cascade(
+                bus_name=bus,
+                code=code,
+                position=position,
+                callback=fn,
+                priority=priority,
             )
         )
         return fn

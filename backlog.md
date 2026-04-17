@@ -20,11 +20,27 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 | **#14** | Façade MCP | Second serveur sur `MCP_PORT` (SDK officiel `mcp`), tools générés depuis registry, `from_char` injecté, sortie markdown |
 | **#15** | Smoke test E2E | Mock `memory/recall` + cascade `decay/after_recall`, validation via simcli + via client MCP |
 
-**Prochaine étape : #11** (`@cascade` + `ShortCircuit` — décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry`).
+**Prochaine étape : #12** (`Bus.dispatch` refactor — pipeline `before* → call → after*`, injection `from_char`, gestion d'erreurs spécifiée).
 
 **Hors scope de ce bloc** : moteur de tour joueur, vrai memory_service / knowledge_service (port Symphonie ultérieur), authentification MCP.
 
 **Dépendance nouvelle prévue** : `mcp` (SDK officiel Anthropic) à ajouter dans `pyproject.toml` + `requirements.txt` à l'étape #14.
+
+---
+
+### C1 — `chat_service` (providers + sessions de dialogue 1-to-1)
+
+Spec complète dans `documents/chat_service.md`. Validé utilisateur le 2026-04-18.
+
+| # | Étape | Statut |
+|---|---|---|
+| ~~1~~ | ~~Porter providers LLM (ollama + anthropic) dans `src/simphonia/providers/`~~ | ✅ validé 2026-04-18 |
+| ~~2~~ | ~~`provider_registry` — factory + `init/get` depuis config YAML `providers:`~~ | ✅ validé 2026-04-18 |
+| ~~3~~ | ~~Squelette `chat_service` (ABC + `DialogueState` + start/reply/stop sans LLM)~~ | ✅ validé 2026-04-18 |
+| ~~4~~ | ~~Logger fichier `/logs/chat.log` (reset au boot)~~ | ✅ validé 2026-04-18 |
+| ~~5~~ | ~~Commandes bus `chat` + câblage bootstrap~~ | ✅ validé 2026-04-18 |
+| ~~6~~ | ~~Génération LLM + schéma JSON `{talk:[...]}` dans system prompt~~ | ✅ validé 2026-04-18 |
+| 7 | Façade MCP (bloqué sur INFRA #14) | En attente |
 
 ---
 
@@ -117,6 +133,14 @@ _(vide)_
 - `src/simphonia/services/CLAUDE.md` : section "Accès à la configuration" — verrouille le pattern DI (stratégies reçoivent leurs params en kwargs, n'importent pas `configuration_service`).
 - `pyproject.toml` + `requirements.txt` : `pyyaml>=6.0` en runtime.
 - Validation : démarrage avec `mongodb_strategy` actif via interpolation YAML `${MONGO_URI}` / `${MONGO_DATABASE}` depuis `.env` — `MongoCharacterService prêt — 10 fiche(s) chargée(s) depuis symphonie.characters`.
+
+### 2026-04-17 — `memory_service/recall` : résolution slots/load_factor/min_distance depuis character_service + config
+
+- `commands/memory.py` : suppression des paramètres `top_k`, `factor`, `max_distance` de `recall_command`.
+- `services/memory_service/__init__.py` : ABC `recall` mis à jour (idem) ; factory extrait `load_factor` et `min_distance` de la config et les passe au constructeur `ChromaMemoryService`.
+- `chroma_strategy.py` : constructeur stocke `_load_factor` / `_min_distance`. Dans `recall`, appel `character_service.get().get_character(from_char)` → lecture `memory.slots` (fallback `DEFAULT_MEMORY_SLOTS=5` si `CharacterNotFound`) ; `n_results = max(int(slots * load_factor), 5)` ; filtre de sortie `distance < min_distance` → rejeté. Import `character_service` en lazy (inside method) pour éviter la dépendance circulaire à l'import du module.
+- `simphonia.yaml` déjà à jour : `load_factor: 1.5`, `min_distance: 0.7`.
+- Validation utilisateur : OK 2026-04-17.
 
 ### 2026-04-17 — `character_service` / `mongodb_strategy` + normalisation `memory_service`
 

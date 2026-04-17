@@ -51,6 +51,58 @@ class CharacterNotFound(SimphoniaError, KeyError):
         return f"character not found: {self.name!r}"
 
 
+class ProviderNotFound(SimphoniaError, KeyError):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"provider not found: {self.name!r}"
+
+
+class DuplicateCascade(SimphoniaError, ValueError):
+    def __init__(self, bus_name: str, code: str, position: str, fn_name: str) -> None:
+        super().__init__(fn_name)
+        self.bus_name = bus_name
+        self.code = code
+        self.position = position
+        self.fn_name = fn_name
+
+    def __str__(self) -> str:
+        return (
+            f"cascade {self.fn_name!r} ({self.position}) already registered "
+            f"on {self.bus_name}/{self.code}"
+        )
+
+
+class SessionNotFound(SimphoniaError, KeyError):
+    def __init__(self, session_id: str) -> None:
+        super().__init__(session_id)
+        self.session_id = session_id
+
+    def __str__(self) -> str:
+        return f"session not found: {self.session_id!r}"
+
+
+class InvalidParticipant(SimphoniaError, ValueError):
+    def __init__(self, name: str, session_id: str) -> None:
+        super().__init__(name)
+        self.name = name
+        self.session_id = session_id
+
+    def __str__(self) -> str:
+        return f"invalid participant {self.name!r} for session {self.session_id!r}"
+
+
+class LLMError(SimphoniaError):
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+    def __str__(self) -> str:
+        return f"LLM error: {self.reason}"
+
+
 class DispatchError(SimphoniaError):
     def __init__(self, bus_name: str, code: str, cause: BaseException) -> None:
         super().__init__(str(cause))
