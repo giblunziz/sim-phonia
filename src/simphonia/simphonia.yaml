@@ -5,7 +5,7 @@ providers:
     model: gemma4:e4b
     max_tokens: 2048
     temperature: 0.6
-    keep_alive: 5m
+    keep_alive: 1h
   opus:
     protocol: anthropic
     api_key: ${ANTHROPIC_API_KEY}

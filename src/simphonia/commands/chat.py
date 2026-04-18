@@ -1,4 +1,5 @@
 from simphonia.core import command
+from simphonia.http import sse
 from simphonia.services import chat_service
 
 CHAT_BUS = "chat"
@@ -23,6 +24,14 @@ def stop_command(session_id: str) -> dict:
 def said_command(session_id: str, from_char: str, to: str, content: str) -> dict:
     import threading
 
+    sse.publish(session_id, {
+        "type": "said",
+        "session_id": session_id,
+        "from_char": from_char,
+        "to": to,
+        "content": content,
+    })
+
     def _auto():
         try:
             chat_service.get().auto_reply(session_id, speaker=to)
@@ -32,3 +41,9 @@ def said_command(session_id: str, from_char: str, to: str, content: str) -> dict
 
     threading.Thread(target=_auto, daemon=True).start()
     return {"session_id": session_id, "from_char": from_char, "to": to, "received": True}
+
+
+@command(bus=CHAT_BUS, code="stop_notify", description="Interne : notifie les abonnés SSE de la fermeture d'une session")
+def stop_notify_command(session_id: str) -> dict:
+    sse.close_session(session_id)
+    return {"session_id": session_id, "notified": True}

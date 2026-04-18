@@ -5,6 +5,8 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
+
+
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
 **Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
@@ -120,6 +122,17 @@ _(vide)_
 _(vide)_
 
 ## DONE
+
+### 2026-04-18 — Module `simweb` (front-end React, interface de chat)
+
+- `src/simweb/` : application React + Vite. Proxy Vite `/bus → http://localhost:8000` (pas de CORS à gérer en dev).
+- **`StartScreen`** : combos *De* / *À* chargées dynamiquement via `character.list`, textarea premier message, checkbox mode humain avec hint contextuel.
+- **`ChatScreen`** : fil de messages colorés par personnage (bleu = `from_char`, violet = `to`), indicateur de frappe animé, scroll automatique, bouton Fermer (`chat.stop`). Zone de saisie (Entrée = envoyer, Maj+Entrée = saut de ligne) uniquement en mode humain.
+- **SSE** : `GET /bus/chat/stream/{session_id}` — stream des événements `chat.said` pour le mode autonome (LLM↔LLM).
+- **Côté serveur** : CORS activé (`app.py`), endpoint SSE ajouté (`routes.py`), publisher thread-safe `http/sse.py`, `said_command` publie l'événement avant de lancer `auto_reply`.
+- Spec dans `documents/simweb.md`.
+- Validation utilisateur : OK 2026-04-18.
+
 
 ### 2026-04-17 — `configuration_service` + loader YAML avec interpolation d'env
 

@@ -49,8 +49,12 @@ class DefaultChatService(ChatService):
         )
         schema = (
             'Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ni après.\n'
-            'Format MVP obligatoire :\n'
-            '{"talk": ["Ce que tu dis à voix haute", "plusieurs lignes possibles"]}\n\n'
+            'Format obligatoire :\n'
+            '{"talk": "Ta réponse complète en un seul bloc de texte."}\n\n'
+            'IMPORTANT :\n'
+            '- "talk" est une SEULE chaîne de caractères, PAS un tableau.\n'
+            '- Produis UNE SEULE réponse cohérente. PAS de variantes, PAS d\'alternatives.\n'
+            '- Reste en personnage. Réponds naturellement, comme dans une vraie conversation.\n\n'
             'Champs futurs (non requis maintenant) : from, to, actions, mood, inner, '
             'expected, noticed, body, memory'
         )
@@ -71,7 +75,6 @@ class DefaultChatService(ChatService):
         stripped = text.strip()
         if stripped.startswith("```"):
             lines = stripped.splitlines()
-            # Retire la première ligne (``` ou ```json) et la dernière (```)
             inner = lines[1:] if lines[-1].strip() == "```" else lines[1:]
             if inner and inner[-1].strip() == "```":
                 inner = inner[:-1]
@@ -90,17 +93,39 @@ class DefaultChatService(ChatService):
         except Exception as exc:
             self._log.warning("[said] dispatch échoué : %s", exc)
 
+    def _publish_sse(self, session_id: str, from_char: str, to: str, content: str) -> None:
+        """Publie directement sur SSE sans passer par le bus (pas de re-dispatch)."""
+        try:
+            from simphonia.http import sse
+            sse.publish(session_id, {
+                "type": "said",
+                "session_id": session_id,
+                "from_char": from_char,
+                "to": to,
+                "content": content,
+            })
+        except Exception as exc:
+            self._log.warning("[sse] publish échoué : %s", exc)
+
     def _call_llm(self, system_prompt: str, messages: list[dict]) -> str:
         reply_text, stats = self._provider.call(system_prompt, messages)
         if reply_text is None:
             raise LLMError("Le provider LLM n'a retourné aucune réponse")
         try:
             data = json.loads(self._strip_markdown_fences(reply_text))
-            talk = data.get("talk", [])
+            talk = data.get("talk")
+            if talk is None:
+                self._log.warning("Champ 'talk' absent dans la réponse JSON — fallback texte brut")
+                return reply_text.strip()
+            # talk peut être str ou list — normaliser en str
+            if isinstance(talk, str):
+                return talk
             if isinstance(talk, list) and talk:
-                return "\n".join(str(line) for line in talk)
-            # talk vide ou absent → fallback
-            self._log.warning("Champ 'talk' absent ou vide dans la réponse JSON — fallback texte brut")
+                # Sécurité : si le LLM a quand même produit un tableau,
+                # prendre uniquement le premier élément (pas de concaténation d'alternatives)
+                self._log.warning("'talk' est un tableau (%d éléments) — prise du premier uniquement", len(talk))
+                return str(talk[0])
+            self._log.warning("'talk' vide — fallback texte brut")
             return reply_text.strip()
         except (json.JSONDecodeError, ValueError):
             self._log.warning("Réponse LLM non-JSON — fallback texte brut")
@@ -210,7 +235,6 @@ class DefaultChatService(ChatService):
             if not human:
                 self._dispatch_said(session_id, from_char=responder, to=from_char, content=reply_text)
         except LLMError as e:
-            # Rollback : retirer le message de from_char qui vient d'être ajouté
             state.history.pop()
             self._log.error("[reply] LLM error — rollback: %s", e)
             raise
@@ -222,12 +246,12 @@ class DefaultChatService(ChatService):
         from simphonia.services import character_service
 
         if session_id not in self._sessions:
-            return  # session stoppée entre temps
+            return
 
         state = self._sessions[session_id]
         other = state.participants[1] if speaker == state.participants[0] else state.participants[0]
 
-        # 1. Générer la réplique de speaker (sa propre fiche, répond à other)
+        # 1. Générer la réplique de speaker
         try:
             speaker_card = character_service.get().get_character(speaker)
             sp = self._build_system_prompt(speaker_card, from_char=other, human=False)
@@ -240,8 +264,12 @@ class DefaultChatService(ChatService):
         state.history.append(DialogueMessage(speaker=speaker, content=speaker_say, timestamp=datetime.utcnow()))
         self._log.info("[auto_reply] %r — %r", speaker, speaker_say)
 
+        # Publier le message du speaker directement via SSE (pas via le bus,
+        # sinon said_command relancerait un auto_reply en boucle)
+        self._publish_sse(session_id, from_char=speaker, to=other, content=speaker_say)
+
         if session_id not in self._sessions:
-            return  # stoppée pendant le premier appel LLM
+            return
 
         # 2. Générer la réponse de other
         try:
@@ -250,7 +278,7 @@ class DefaultChatService(ChatService):
             msgs2 = self._build_messages(state.history, other)
             other_reply = self._call_llm(sp2, msgs2)
         except LLMError as e:
-            state.history.pop()  # rollback speaker_say
+            state.history.pop()
             self._log.error("[auto_reply] LLM error répondant %r : %s", other, e)
             return
 
@@ -258,7 +286,7 @@ class DefaultChatService(ChatService):
         self._log.info("[auto_reply] %r — %r", other, other_reply)
 
         if session_id not in self._sessions:
-            return  # stoppée pendant le second appel LLM
+            return
 
         # 3. Publier chat.said pour continuer la boucle
         self._dispatch_said(session_id, from_char=other, to=speaker, content=other_reply)
@@ -269,7 +297,5 @@ class DefaultChatService(ChatService):
             raise SessionNotFound(session_id)
 
         self._sessions.pop(session_id)
-
         self._log.info("[stop] session=%s closed", session_id)
-
         return {"session_id": session_id, "status": "closed"}

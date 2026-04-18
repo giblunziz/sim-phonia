@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from simphonia.core import BusNotFound, CommandNotFound, DispatchError, default_registry
+from simphonia.http import sse
 from simphonia.http.schemas import (
     BusDTO,
     CommandDTO,
@@ -46,6 +48,15 @@ def dispatch(bus_name: str, req: DispatchRequest) -> DispatchResponse:
         raise HTTPException(status_code=500, detail=_error("DispatchError", str(exc))) from exc
 
     return DispatchResponse(result=result)
+
+
+@router.get("/bus/chat/stream/{session_id}")
+async def stream_chat_events(session_id: str) -> StreamingResponse:
+    return StreamingResponse(
+        sse.subscribe(session_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 def _error(type_: str, message: str) -> dict[str, dict[str, str]]:
