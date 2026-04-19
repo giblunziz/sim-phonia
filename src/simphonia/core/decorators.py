@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from simphonia.core.cascade import Cascade, CascadeCallback, CascadePosition
-from simphonia.core.command import Callback, Command
+from simphonia.core.command import MCP_ROLES, Callback, Command
 from simphonia.core.errors import CommandContractError
 from simphonia.core.registry import default_registry
 
@@ -18,6 +18,7 @@ def command(
     mcp: bool = False,
     mcp_description: str | None = None,
     mcp_params: dict[str, Any] | None = None,
+    mcp_role: str = "player",
 ) -> Callable[[F], F]:
     _validate_mcp_contract(
         bus_name=bus,
@@ -25,6 +26,7 @@ def command(
         mcp=mcp,
         mcp_description=mcp_description,
         mcp_params=mcp_params,
+        mcp_role=mcp_role,
     )
 
     def decorator(fn: F) -> F:
@@ -38,6 +40,7 @@ def command(
                 mcp=mcp,
                 mcp_description=mcp_description,
                 mcp_params=mcp_params,
+                mcp_role=mcp_role,
             )
         )
         return fn
@@ -92,6 +95,7 @@ def _validate_mcp_contract(
     mcp: bool,
     mcp_description: str | None,
     mcp_params: dict[str, Any] | None,
+    mcp_role: str,
 ) -> None:
     if not mcp:
         if mcp_description is not None or mcp_params is not None:
@@ -99,6 +103,12 @@ def _validate_mcp_contract(
                 bus_name,
                 code,
                 "mcp_description/mcp_params provided but mcp=False",
+            )
+        if mcp_role != "player":
+            raise CommandContractError(
+                bus_name,
+                code,
+                f"mcp_role={mcp_role!r} provided but mcp=False (contract inconsistent)",
             )
         return
 
@@ -126,4 +136,10 @@ def _validate_mcp_contract(
             bus_name,
             code,
             "mcp_params must declare a 'properties' dict",
+        )
+    if mcp_role not in MCP_ROLES:
+        raise CommandContractError(
+            bus_name,
+            code,
+            f"mcp_role={mcp_role!r} invalid — must be one of {sorted(MCP_ROLES)}",
         )

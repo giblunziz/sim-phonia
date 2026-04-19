@@ -16,9 +16,13 @@ async def _serve(http_port: int, character: str | None, mcp_port: int) -> None:
     mcp_app = build_mcp_app(character)
     configs.append(uvicorn.Config(mcp_app, host="127.0.0.1", port=mcp_port, log_config=None))
     logging.getLogger(__name__).info(
-        "MCP server : http://127.0.0.1:%d/sse%s",
+        "MCP player : http://127.0.0.1:%d/sse%s",
         mcp_port,
         f" (personnage : {character})" if character else " (from_char requis dans les appels)",
+    )
+    logging.getLogger(__name__).info(
+        "MCP mj     : http://127.0.0.1:%d/sse/mj",
+        mcp_port,
     )
 
     await asyncio.gather(*[uvicorn.Server(c).serve() for c in configs])

@@ -3,6 +3,7 @@ import {
   runsList, runsDelete, knowledgeDeleteByActivity,
   activityResume, activityGiveTurn, activityNextRound, activityEnd,
   openActivityStream,
+  mjNextTurn,
 } from '../../api/simphonia.js';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
@@ -117,7 +118,10 @@ function RunsList({ onResume }) {
 
   const handleDelete = async (run) => {
     if (!confirm(`Supprimer le run "${run._id}" ?`)) return;
-    const withKnowledge = confirm(`Supprimer également les knowledge associés à "${run._id}" ?`);
+    const hasExchanges  = (run.exchange_count ?? 0) > 0;
+    const withKnowledge = hasExchanges
+      ? confirm(`Supprimer également les knowledge associés à "${run._id}" ?`)
+      : false;
 
     setBusy((b) => ({ ...b, [run._id]: 'delete' }));
     setError(null);
@@ -134,7 +138,7 @@ function RunsList({ onResume }) {
 
   if (loading) return <p className="empty-note">Chargement…</p>;
 
-  const COL = 'minmax(110px,1.6fr) minmax(80px,1fr) 72px 52px minmax(70px,0.9fr) 108px 46px 46px 76px';
+  const COL = 'minmax(110px,1.6fr) minmax(80px,1fr) 72px minmax(80px,0.8fr) 52px minmax(70px,0.9fr) 108px 46px 46px 76px';
 
   return (
     <div className="admin-panel">
@@ -153,6 +157,7 @@ function RunsList({ onResume }) {
               <span>Run</span>
               <span>Activité</span>
               <span>État</span>
+              <span>MJ</span>
               <span>Éch.</span>
               <span>Scène</span>
               <span>Modifié le</span>
@@ -168,6 +173,7 @@ function RunsList({ onResume }) {
                   <span className="kc-tag" style={{ fontSize: '0.76rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r._id}</span>
                   <span className="kc-dim">{r.activity}</span>
                   <span><StateChip state={r.state} /></span>
+                  <span className="kc-dim">{r.mj_mode ?? '—'}</span>
                   <span className="kc-dim" style={{ textAlign: 'center' }}>{r.exchange_count ?? 0}</span>
                   <span className="kc-dim">{r.scene || '—'}</span>
                   <span className="kc-dim">{formatTs(r.ts_updated)}</span>
@@ -224,6 +230,8 @@ function MJDashboard({ sessionData, onClose }) {
   const [ended, setEnded]             = useState(initState === 'ended');
   const [error, setError]             = useState(null);
   const [showAmorce, setShowAmorce]   = useState(true);
+  // Preview du prochain speaker, alimenté par SSE mj.next_ready (publié par HumanMJ)
+  const [nextReady, setNextReady]     = useState(null);
 
   const logRef  = useRef(null);
   const sseRef  = useRef(null);
@@ -260,12 +268,23 @@ function MJDashboard({ sessionData, onClose }) {
         if (evt.type === 'activity.round_changed') {
           setRound(evt.round);
           setRoundEvent(evt.event ?? null);
+          // Le round vient de basculer — la preview précédente n'est plus valide
+          setNextReady(null);
         }
 
         if (evt.type === 'activity.ended') {
           setEnded(true);
           setPending(false);
+          setNextReady(null);
           es.close();
+        }
+
+        if (evt.type === 'mj.next_ready') {
+          setNextReady({
+            target:         evt.target,
+            turning_mode:   evt.turning_mode,
+            round_complete: evt.round_complete,
+          });
         }
       } catch { /* JSON parse error ignoré */ }
     };
@@ -305,6 +324,30 @@ function MJDashboard({ sessionData, onClose }) {
     } catch (e) { setError(e.message); }
   };
 
+  const handleNext = async () => {
+    if (pending || ended) return;
+    setError(null);
+    try {
+      const res = await mjNextTurn(session_id);
+      // give_turn déclenché → on attend l'exchange via SSE (pending visuel)
+      if (res.action === 'give_turn' || res.action === 'round_changed+give_turn') {
+        setPending(true);
+        setInstruction('');
+      }
+      if (res.action === 'round_changed' || res.action === 'round_changed+give_turn') {
+        setRound(res.round);
+      }
+      if (res.action === 'ended') {
+        setEnded(true);
+      }
+      if (res.action === 'no_target') {
+        setError(`Aucune cible auto-résolue (${res.reason}). Choisis un joueur manuellement.`);
+      }
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
   const handleEnd = async () => {
     if (!confirm('Terminer l\'activité ?')) return;
     setError(null);
@@ -327,9 +370,27 @@ function MJDashboard({ sessionData, onClose }) {
           </span>
           {starter && <span className="kc-dim" style={{ fontSize: '0.8rem' }}>starter : {starter}</span>}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {!ended && (
             <>
+              {nextReady && (
+                <span className="kc-dim" style={{ fontSize: '0.8rem', marginRight: '0.3rem' }}>
+                  {nextReady.round_complete
+                    ? `Round complet (${nextReady.turning_mode})`
+                    : nextReady.target
+                      ? <>Prochain : <strong style={{ color: 'var(--accent)' }}>{nextReady.target}</strong></>
+                      : `— (${nextReady.turning_mode})`}
+                </span>
+              )}
+              <button
+                className="btn-secondary"
+                style={{ background: 'var(--accent)', color: '#fff', fontWeight: 600 }}
+                onClick={handleNext}
+                disabled={pending}
+                title="Pas suivant selon le turning_mode (give_turn / next_round / end)"
+              >
+                ▶ Next
+              </button>
               <button className="btn-secondary" onClick={handleNextRound} disabled={pending}>
                 Round suivant ↓
               </button>

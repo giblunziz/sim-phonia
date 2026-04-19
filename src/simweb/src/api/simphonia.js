@@ -128,3 +128,7 @@ export const knowledgeDeleteByActivity = (activity_id) =>
 export function openActivityStream(sessionId) {
   return new EventSource(`${BASE}/activity/stream/${sessionId}`);
 }
+
+// ── mj (orchestration step-by-step) ───────────────────────────────────────────
+
+export const mjNextTurn = (session_id) => dispatch('mj', 'next_turn', { session_id });

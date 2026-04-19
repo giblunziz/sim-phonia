@@ -7,6 +7,7 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import StrEnum
 
 from simphonia.core.errors import InstanceNotFound, SessionNotFound
 from simphonia.services.activity_service.context_builder import (
@@ -16,11 +17,26 @@ from simphonia.services.activity_service.context_builder import (
     build_system_prompt,
     get_tools,
 )
+from simphonia.services.mj_service import MJService, build_mj_service
 from simphonia.utils.parser import parse_llm_json
 
 log = logging.getLogger("simphonia.activity.engine")
 
 MAX_RETRIES = 3
+
+
+class RunState(StrEnum):
+    """État du run d'activité — persisté dans Mongo, envoyé en SSE, comparé côté simweb.
+
+    `StrEnum` : chaque membre est aussi une `str`, donc sérialisation JSON/BSON
+    transparente et comparaison directe avec les strings reçues de l'extérieur.
+    """
+    RUNNING = "running"
+    ENDED   = "ended"
+
+
+# Retour ponctuel de `give_turn` (pattern async — résultat via SSE).
+TURN_STATUS_PENDING = "pending"
 
 # Champs retenus dans public / private (exclut les alias d'identification)
 _PUBLIC_KEYS  = PUBLIC_FIELDS  - {"from", "message", "action"}
@@ -39,8 +55,9 @@ class SessionState:
     knowledge:        dict[str, list[dict]]  # slug → knowledge_entries
     system_schemas:   list[dict]             # schemas résolus depuis activity.system[enabled]
     provider_name:    str
+    mj_service:       MJService | None = None  # stratégie MJ, instanciée à run/resume selon instance.mj_mode
     round:            int = 1
-    state:            str = "running"
+    state:            RunState = RunState.RUNNING
     exchange_history: list[dict] = field(default_factory=list)
     retry_counts:     dict[tuple, int] = field(default_factory=dict)
 
@@ -87,7 +104,7 @@ def _resolve_whisper(instance: dict, round_num: int, target: str, position: int)
 
 def _make_tool_executor(from_char: str):
     def execute(name: str, args: dict) -> str:
-        if name in ("memory/recall", "recall"):
+        if name == "recall":
             from simphonia.services import character_service, memory_service
             about_raw = args.get("about", "").strip()
             about_slug = character_service.get().get_identifier(about_raw) or about_raw.lower()
@@ -121,6 +138,26 @@ def _publish_sse(session_id: str, event: dict) -> None:
         sse.publish(session_id, event)
     except Exception as exc:
         log.warning("[sse] publish échoué : %s", exc)
+
+
+def _notify_mj_turn_complete(session: SessionState, exchange: dict) -> None:
+    """Best-effort — un hook MJ qui plante ne doit pas bloquer le flux du run."""
+    if session.mj_service is None:
+        return
+    try:
+        session.mj_service.on_turn_complete(session, exchange)
+    except Exception as exc:
+        log.warning("[mj] on_turn_complete a échoué : %s", exc, exc_info=True)
+
+
+def _notify_mj_session_end(session: SessionState) -> None:
+    """Best-effort — idem que _notify_mj_turn_complete."""
+    if session.mj_service is None:
+        return
+    try:
+        session.mj_service.on_session_end(session)
+    except Exception as exc:
+        log.warning("[mj] on_session_end a échoué : %s", exc, exc_info=True)
 
 
 def _build_exchange(round_num: int, speaker: str, raw_response: str, parsed: dict | None) -> dict:
@@ -265,6 +302,8 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
         "whisper":    whisper,
     })
 
+    _notify_mj_turn_complete(session, exchange)
+
 
 # ---------------------------------------------------------------------------
 # API publique — appelée par les commandes bus
@@ -338,12 +377,14 @@ def run(instance_id: str) -> dict:
     run_data.pop("_id", None)
     run_data.update({
         "instance_id":   instance_id,
-        "state":         "running",
+        "state":         RunState.RUNNING,
         "current_round": 1,
         "ts_started":    _now_iso(),
         "exchanges":     [],
         "mj":            [],
     })
+
+    mj_mode = svc_instance.get("mj_mode", "human")
 
     session = SessionState(
         session_id=session_id,
@@ -356,6 +397,7 @@ def run(instance_id: str) -> dict:
         knowledge=knowledge,
         system_schemas=system_schemas,
         provider_name=provider_name,
+        mj_service=build_mj_service(mj_mode),
     )
     _sessions[session_id] = session
     _persist(session)
@@ -368,9 +410,11 @@ def run(instance_id: str) -> dict:
         "starter":    svc_instance.get("starter"),
         "amorce":     svc_instance.get("amorce"),
         "event":      event,
+        "mj_mode":    mj_mode,
     }
     _publish_sse(session_id, {"type": "activity.started", **payload})
-    log.info("[run] session=%s instance=%r players=%s", session_id, instance_id, players)
+    log.info("[run] session=%s instance=%r players=%s mj_mode=%s",
+             session_id, instance_id, players, mj_mode)
     return payload
 
 
@@ -437,6 +481,8 @@ def resume(run_id: str) -> dict:
 
     session_id = str(uuid.uuid4())
 
+    mj_mode = run_doc.get("mj_mode", "human")
+
     session = SessionState(
         session_id=session_id,
         instance_id=instance_id,
@@ -448,8 +494,9 @@ def resume(run_id: str) -> dict:
         knowledge=knowledge,
         system_schemas=system_schemas,
         provider_name=provider_name,
+        mj_service=build_mj_service(mj_mode),
         round=current_round,
-        state=run_doc.get("state", "running"),
+        state=RunState(run_doc.get("state", RunState.RUNNING)),
         exchange_history=list(existing_exchanges),
     )
     _sessions[session_id] = session
@@ -481,7 +528,7 @@ def give_turn(session_id: str, target: str, instruction: str | None = None) -> d
         name=f"activity-turn-{session_id[:8]}-{target}",
     )
     t.start()
-    return {"status": "pending", "session_id": session_id, "target": target}
+    return {"status": TURN_STATUS_PENDING, "session_id": session_id, "target": target}
 
 
 def next_round(session_id: str) -> dict:
@@ -505,12 +552,14 @@ def next_round(session_id: str) -> dict:
 
 def end(session_id: str) -> dict:
     session = _get_session(session_id)
-    session.state = "ended"
-    session.instance["state"]    = "ended"
+    session.state = RunState.ENDED
+    session.instance["state"]    = RunState.ENDED
     session.instance["ts_ended"] = _now_iso()
     _persist(session)
+
+    _notify_mj_session_end(session)
 
     del _sessions[session_id]
     _publish_sse(session_id, {"type": "activity.ended", "session_id": session_id})
     log.info("[end] session=%s closed", session_id)
-    return {"state": "ended", "session_id": session_id}
+    return {"state": RunState.ENDED, "session_id": session_id}

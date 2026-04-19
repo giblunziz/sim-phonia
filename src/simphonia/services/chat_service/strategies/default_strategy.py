@@ -12,6 +12,7 @@ from datetime import datetime
 
 from simphonia.core import default_registry
 from simphonia.core.errors import CharacterNotFound, InvalidParticipant, LLMError, SessionNotFound
+from simphonia.core.mcp import mcp_tool_definitions
 from simphonia.providers.base import LLMProvider, ToolExecutor
 from simphonia.services.chat_service import ChatService
 from simphonia.services.chat_service.types import DialogueMessage, DialogueState
@@ -66,17 +67,11 @@ class DefaultChatService(ChatService):
         return f"Tu es ce personnage :\n{fiche}\n\n{interlocutor}\n\n{memory_hint}\n\n{schema}"
 
     def _get_mcp_tools(self) -> list[dict]:
-        """Retourne les tool definitions (format provider-agnostic) pour les commandes mcp=True."""
-        return [
-            {
-                "name": cmd.code,
-                "description": cmd.mcp_description or cmd.description,
-                "parameters": cmd.mcp_params or {"type": "object", "properties": {}},
-            }
-            for bus in default_registry().all().values()
-            for cmd in bus.list()
-            if cmd.mcp
-        ]
+        """Tool definitions (format provider-agnostic) pour les commandes `mcp_role="player"`.
+
+        Filtre explicite : le chat 1-to-1 est un contexte joueur, pas MJ.
+        """
+        return mcp_tool_definitions(role="player")
 
     def _make_tool_executor(self, from_char: str) -> ToolExecutor:
         """Retourne un exécuteur de tools avec from_char injecté."""

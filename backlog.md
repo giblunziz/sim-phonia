@@ -5,6 +5,27 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
+### 🎭 MJ — `mj_service` + port Beholder autonome
+
+Spec complète dans [`documents/mj_service.md`](./documents/mj_service.md) — mini-backlog local dans la section §10 (convention TODO/WIP/DONE/BLOCKED).
+
+**Deux axes orthogonaux** :
+- `mj_mode` ∈ `human` | `autonomous`
+- `turning_mode` ∈ `starter` | `named` | `round_robin` | `next_remaining` | `random_remaining` | `random`
+
+**Architecture** :
+- Service `mj_service/` (interface + 2 stratégies `HumanMJ` / `AutonomousMJ`) — preview SSE pour le bouton Next humain, boucle LLM en autonomous
+- Helpers purs `turning_modes.py` — stratégie de sélection, zéro LLM
+- Commande `mj/next_turn` = orchestrateur générique step-by-step (bouton ▶ Next du dashboard + raccourci AutonomousMJ)
+- Façade MCP dual (`/sse` player + `/sse/mj` MJ) via nouvel attribut `mcp_role` sur `@command`
+- Port Beholder legacy sur `AutonomousMJ` — boucle tool-use, state-machine via prompting (`rules.mj`)
+
+**8 étapes séquencées** dans le doc (§10), étapes 1–5 livrables sans toucher la façade MCP ni LLM MJ. Le ticket reste HOT tant que toutes les étapes ne sont pas validées.
+
+**État courant** : #1, #2, #3, #3bis, #4, #5 ✅ `DONE` (2026-04-19/20). Prochain stop : **#6** — `mcp_role` attribut sur `@command` + refactor `list_mcp_commands(role=...)` pour préparer la façade MCP dual.
+
+---
+
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
 **Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
@@ -121,14 +142,56 @@ Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis pour `sha
 - Formaliser la `scene` au-delà d'un simple string (participants de la scène, props, contraintes narratives)
 - Grouper plusieurs activités dans une `session`
 
+### W4 — simweb : action `duplicate` sur `StorageInstancesPanel`
+
+- Bouton ⎘ (ou équivalent) par ligne → deep-copy de l'instance, slug reset (vide)
+- Le dialog de création s'ouvre pré-rempli avec tous les champs sauf `_id`/`slug`
+- Validation : le slug est un champ obligatoire à la soumission (actuellement il est vérifié en `if (!id) setError(...)` mais l'UI ne l'indique pas — ajouter `required` + aria-invalid + feedback visuel)
+- Cas d'usage : dériver rapidement une variante d'instance (même scène + players, rules ou mj_mode différents) sans ressaisie
+
 ## COLD
 
+### 🎭 MJ — Dialog de lancement d'`activity_run` avec override `mj_mode`
+
+Aujourd'hui `▶ Lancer` depuis `StorageInstancesPanel` appelle `activity/run(instance_id)` sans paramètre ; le run hérite de la préconisation `mj_mode` de l'instance (snapshot deep-copy immuable).
+
+À terme : dialog pré-rempli depuis `instance.mj_mode`, override optionnel avant confirmation. Le `turning_mode` reste non-overridable (couplé aux règles et whispers scénarisés).
+
+YAGNI V1. À réévaluer une fois les 3 modes MJ livrés et retour d'usage.
 
 ## FROZEN
 
 _(vide)_
 
 ## DONE
+
+### 2026-04-19 — Audit refactor : source unique MCP + RunState + confirm delete conditionnelle
+
+**1. Source unique pour les tool definitions MCP**
+
+- `src/simphonia/core/mcp.py` : helpers `list_mcp_commands()`, `to_tool_definitions()`, `mcp_tool_definitions()` — parcourent `BusRegistry`, filtrent `mcp=True`, retournent le format provider-agnostic `{name, description, parameters}` consommé par `AnthropicProvider` / `OllamaProvider` / façade MCP.
+- `core/__init__.py` : re-export des trois helpers.
+- `activity_service/context_builder.py` : `_TOOL_MEMORY_RECALL` et `_ALL_TOOLS` supprimés. `get_tools(activity)` délègue à `mcp_tool_definitions()` (paramètre `activity` conservé pour futur filtrage par allowlist).
+- `chat_service/default_strategy.py::_get_mcp_tools` : délègue au helper.
+- `facade/server.py` : utilise `list_mcp_commands()` — conserve son schema patching `from_char` local.
+- `activity_service/engine.py::_make_tool_executor` : fallback `"memory/recall"` supprimé (le helper n'émet que `"recall"`, aligné sur `cmd.code`).
+- **Reste à faire (ticket séparé)** : généralisation des `_make_tool_executor` (3 implémentations hard-codent encore `if name == "recall"`). Requiert un formatter par commande côté service.
+
+**2. `RunState(StrEnum)` + `TURN_STATUS_PENDING` dans `activity_service/engine.py`**
+
+- Enum `RunState` avec `RUNNING` / `ENDED` — `StrEnum` (Python 3.11+) pour sérialisation JSON/BSON transparente et comparaison directe avec strings reçues de l'extérieur.
+- Constante `TURN_STATUS_PENDING = "pending"` — sémantique distincte (retour async de `give_turn`, pas un state de session).
+- 7 littéraux remplacés dans `engine.py` (dataclass default, `run_data`, `resume`, `end`, retour `give_turn`).
+- Renommage `SessionState` → `RunState` pour éviter la collision avec le dataclass `SessionState` existant ; cohérent avec `run_id` / `activity_runs`.
+- Front simweb non touché : les strings réseau restent identiques.
+
+**3. simweb — confirmation delete knowledge conditionnelle**
+
+- `ActivityDashboardPanel.jsx::handleDelete` : la seconde confirmation "Supprimer également les knowledge associés à ... ?" n'apparaît que si `run.exchange_count > 0`. Sinon `withKnowledge = false` direct, suppression du run sans question superflue.
+
+Validation utilisateur : OK 2026-04-19.
+
+---
 
 ### 2026-04-19 — Dashboard MJ v2 (révision complète)
 

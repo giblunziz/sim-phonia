@@ -6,7 +6,9 @@ import {
 } from '../../api/simphonia.js';
 import MarkdownEditor from '../common/MarkdownEditor.jsx';
 
-const TURNING_MODES = ['mj', 'round_robin'];
+const TURNING_MODES = ['starter', 'named', 'round_robin', 'next_remaining', 'random_remaining', 'random'];
+// V1 : human + autonomous. `human_in_loop` sera exposé à l'étape #5 du mj_service.
+const MJ_MODES = ['human', 'autonomous'];
 
 const EMPTY_FORM = {
   slug: '',
@@ -17,7 +19,8 @@ const EMPTY_FORM = {
   provider_players: '',
   max_rounds: 3,
   temperature: 0.8,
-  turning_mode: 'mj',
+  turning_mode: 'named',
+  mj_mode: 'human',
   starter: '',
   amorce: '',
   events: [],
@@ -44,7 +47,9 @@ function entryToForm(e) {
     provider_players: e.providers?.players ?? '',
     max_rounds:       e.max_rounds ?? 3,
     temperature:      e.temperature ?? 0.8,
-    turning_mode:     e.turning_mode ?? 'mj',
+    // Legacy tolerance : les valeurs bancales ('mj', autre) retombent sur la défaut.
+    turning_mode:     TURNING_MODES.includes(e.turning_mode) ? e.turning_mode : 'named',
+    mj_mode:          MJ_MODES.includes(e.mj_mode) ? e.mj_mode : 'human',
     starter:          e.starter ?? '',
     amorce:           e.amorce ?? '',
     events:           (e.events ?? []).map((x) => ({ ...x })),
@@ -61,6 +66,7 @@ function formToPayload(f) {
     max_rounds:   Number(f.max_rounds),
     temperature:  Number(f.temperature),
     turning_mode: f.turning_mode,
+    mj_mode:      f.mj_mode,
     starter:      f.starter || null,
     amorce:       f.amorce,
     events:       f.events,
@@ -401,6 +407,13 @@ export default function StorageInstancesPanel({ onLaunch }) {
                 <select id="ins-mode" value={form.turning_mode}
                   onChange={(e) => set('turning_mode', e.target.value)} disabled={busy.save}>
                   {TURNING_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="ins-mj-mode">Mode MJ <span className="label-opt">(préconisation)</span></label>
+                <select id="ins-mj-mode" value={form.mj_mode}
+                  onChange={(e) => set('mj_mode', e.target.value)} disabled={busy.save}>
+                  {MJ_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
             </div>

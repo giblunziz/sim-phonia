@@ -72,6 +72,14 @@ handlers:
     encoding: utf-8
     mode: w
 
+  file_mj:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/mj.log
+    encoding: utf-8
+    mode: w
+
 loggers:
   simphonia.chat:
     level: DEBUG
@@ -106,6 +114,11 @@ loggers:
   simphonia.activity:
     level: DEBUG
     handlers: [console, file_activity]
+    propagate: false
+
+  simphonia.mj:
+    level: DEBUG
+    handlers: [console, file_mj]
     propagate: false
 
   simphonia.chromadb:

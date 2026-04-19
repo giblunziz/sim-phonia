@@ -27,6 +27,7 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [memory_service.md](./documents/memory_service.md) — cahier des charges du `memory_service` (RAG contextuel, ChromaDB, interface recall/stats/resync, bus, points ouverts)
 - [service_character_storage.md](./documents/service_character_storage.md) — cahier des charges du `character_storage` (source de vérité MongoDB, collections `characters` + `knowledge`, CRUD, bus admin, intégration simweb)
 - [activity_engine.md](./documents/activity_engine.md) — cahier des charges de l'`activity_engine` (orchestrateur de session MJ-driven, SessionState, commandes bus activity, SSE, circuit breaker, persistance MongoDB)
+- [mj_service.md](./documents/mj_service.md) — cahier des charges du `mj_service` (mj_mode human|human_in_loop|autonomous × turning_mode starter|named|round_robin|next_remaining|random_remaining|random, façade MCP dual avec mcp_role, port Beholder)
 
 ### Études & synthèses
 

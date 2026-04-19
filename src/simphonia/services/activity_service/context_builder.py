@@ -3,6 +3,7 @@ import json
 import logging
 from collections import defaultdict
 
+from simphonia.core.mcp import mcp_tool_definitions
 from simphonia.utils.parser import parse_llm_json
 
 log = logging.getLogger("simphonia.activity.context")
@@ -10,40 +11,22 @@ log = logging.getLogger("simphonia.activity.context")
 PRIVATE_FIELDS = {"inner_thought", "inner", "expected", "noticed", "memory"}
 PUBLIC_FIELDS  = {"from", "to", "talk", "message", "action", "actions", "body", "mood"}
 
-# Tool recall — format provider-agnostic (converti par chaque provider dans son call())
-_TOOL_MEMORY_RECALL = {
-    "name": "memory/recall",
-    "description": "Cherche dans tes souvenirs ce que tu sais sur quelqu'un dans un contexte donné.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "about": {
-                "type": "string",
-                "description": "Le prénom de la personne dont tu veux te souvenir",
-            },
-            "context": {
-                "type": "string",
-                "description": "La situation ou le sujet qui t'occupe en ce moment",
-            },
-        },
-        "required": ["about", "context"],
-    },
-}
-
-_ALL_TOOLS = [_TOOL_MEMORY_RECALL]
-
 
 # ======================================================================
 #  TOOLS
 # ======================================================================
 
 def get_tools(activity: dict | None = None) -> list[dict]:
-    """Retourne les tool definitions à passer au provider.
+    """Retourne les tool definitions à passer au provider **joueur**.
 
-    Par défaut : tous les tools référencés. Le paramètre `activity` est
-    réservé pour un futur filtrage par liste de tools autorisés par activité.
+    Source de vérité : le décorateur `@command(mcp=True, mcp_role="player", ...)`.
+    Filtre explicite sur `role="player"` — les tools MJ (`give_turn`, etc.) ne
+    sont pas exposés aux LLM joueurs.
+
+    Le paramètre `activity` est réservé pour un futur filtrage par allowlist
+    (`activity['tools_allowed']`).
     """
-    return list(_ALL_TOOLS)
+    return mcp_tool_definitions(role="player")
 
 
 # ======================================================================
@@ -140,9 +123,18 @@ def build_system_prompt(
         parts.append(f"## Scène\n{scene_content}")
 
     # 3. Règles joueur
-    player_rules = activity.get("player_rules", "")
+    rules = activity.get("rules") or {}
+    if not isinstance(rules, dict):
+        log.warning("[build_system_prompt] activity.rules n'est pas un dict (%r) pour %r",
+                    type(rules).__name__, activity.get("_id", "?"))
+        rules = {}
+
+    player_rules = rules.get("players", "")
     if player_rules:
         parts.append(f"## Règles du jeu\n{player_rules}")
+    else:
+        log.warning("[build_system_prompt] rules.players absent ou vide pour l'activité %r",
+                    activity.get("_id", "?"))
 
     # 4. Impressions sur les autres (knowledge)
     if knowledge_entries:
