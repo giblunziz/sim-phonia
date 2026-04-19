@@ -109,3 +109,22 @@ export async function chatStop(sessionId) {
 export function openEventStream(sessionId) {
   return new EventSource(`${BASE}/chat/stream/${sessionId}`);
 }
+
+// ── activity engine ───────────────────────────────────────────────────────────
+
+export const activityRun       = (instance_id)                     => dispatch('activity', 'run',        { instance_id });
+export const activityResume    = (run_id)                          => dispatch('activity', 'resume',     { run_id });
+export const activityGiveTurn  = (session_id, target, instruction) => dispatch('activity', 'give_turn', { session_id, target, instruction: instruction || null });
+export const activityNextRound = (session_id)                      => dispatch('activity', 'next_round', { session_id });
+export const activityEnd       = (session_id)                      => dispatch('activity', 'end',        { session_id });
+
+export const runsList  = (filter)  => dispatch('activity_storage', 'runs.list',   { filter });
+export const runsGet   = (run_id)  => dispatch('activity_storage', 'runs.get',    { run_id });
+export const runsDelete = (run_id) => dispatch('activity_storage', 'runs.delete', { run_id });
+
+export const knowledgeDeleteByActivity = (activity_id) =>
+  dispatch('character_storage', 'knowledge.delete_by_activity', { activity_id });
+
+export function openActivityStream(sessionId) {
+  return new EventSource(`${BASE}/activity/stream/${sessionId}`);
+}

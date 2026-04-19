@@ -33,6 +33,7 @@ class MongoActivityStorage(ActivityStorageService):
         schemas_collection: str = "schemas",
         scenes_collection: str = "scenes",
         instances_collection: str = "activity_instances",
+        runs_collection: str = "activity_runs",
     ) -> None:
         self._client = MongoClient(database_uri)
         db = self._client[database_name]
@@ -40,13 +41,15 @@ class MongoActivityStorage(ActivityStorageService):
         self._schemas = db[schemas_collection]
         self._scenes = db[scenes_collection]
         self._instances = db[instances_collection]
+        self._runs = db[runs_collection]
         act_count = self._activities.count_documents({})
         sch_count = self._schemas.count_documents({})
         scn_count = self._scenes.count_documents({})
         ins_count = self._instances.count_documents({})
+        run_count = self._runs.count_documents({})
         log.info(
-            "MongoActivityStorage prêt — activities(%d), schemas(%d), scenes(%d), instances(%d)",
-            act_count, sch_count, scn_count, ins_count,
+            "MongoActivityStorage prêt — activities(%d), schemas(%d), scenes(%d), instances(%d), runs(%d)",
+            act_count, sch_count, scn_count, ins_count, run_count,
         )
 
     def list_activities(self, *, filter: dict | None = None) -> list[dict]:
@@ -146,3 +149,33 @@ class MongoActivityStorage(ActivityStorageService):
 
     def delete_instance(self, instance_id: str) -> bool:
         return self._instances.delete_one({"_id": instance_id}).deleted_count == 1
+
+    # ── activity_runs ──────────────────────────────────────────────
+
+    def list_runs(self, *, filter: dict | None = None) -> list[dict]:
+        pipeline = [
+            {"$match": filter or {}},
+            {"$addFields": {"exchange_count": {"$size": {"$ifNull": ["$exchanges", []]}}}},
+            {"$sort": {"ts_updated": -1}},
+        ]
+        return [_serialize(doc) for doc in self._runs.aggregate(pipeline)]
+
+    def get_run(self, run_id: str) -> dict | None:
+        doc = self._runs.find_one({"_id": run_id})
+        return _serialize(doc) if doc else None
+
+    def put_run(self, run_id: str, data: dict) -> dict:
+        now = datetime.now(timezone.utc)
+        safe = {k: v for k, v in data.items() if k not in ("_id", "ts_created", "ts_updated")}
+        self._runs.update_one(
+            {"_id": run_id},
+            {
+                "$set": {**safe, "ts_updated": now},
+                "$setOnInsert": {"ts_created": now},
+            },
+            upsert=True,
+        )
+        return _serialize(self._runs.find_one({"_id": run_id}))
+
+    def delete_run(self, run_id: str) -> bool:
+        return self._runs.delete_one({"_id": run_id}).deleted_count == 1

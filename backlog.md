@@ -5,18 +5,34 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
-### ACB — `activity_context_builder` (validation différée — sera testée avec l'activity_engine)
+### D1 — Dashboard MJ (révision complète)
 
-Implémenté dans `src/simphonia/services/activity_service/context_builder.py`. Spec dans `documents/activity_context_builder.md`.
+Spec validée le 2026-04-19. Remplace le Dashboard MJ v1 livré le même jour.
 
-- `format_exchange(speaker, raw_response)` — port fidèle du legacy Symphonie, markdown public-only, `mood` public, `inner_thought` privé
-- `build_system_prompt(player, instance, activity, scene, character, knowledge_entries)` — ordre : schema JSON > scène > règles > impressions knowledge > fiche personnage
-- `build_messages(player, instance, exchange_history, ...)` — ordre : amorce > event > whisper > historique (role=assistant/user) > instruction MJ
-- `get_tools(activity=None)` — retourne `[memory/recall]` en format provider-agnostic
-- `src/simphonia/utils/parser.py` créé — port de `parse_llm_json` depuis Symphonie
+**Écran Storage > Instances** :
+- Ajouter un bouton ▶ Lancer par ligne d'instance (déplace le lancement depuis le Dashboard vers cet écran).
+
+**Écran Dashboard MJ** :
+- Liste de tous les documents `activity_runs` (MongoDB), tri par défaut `ts_updated: -1`.
+- Colonnes : `_id`, `activity`, `state`, `scene`, `ts_updated`, `current_round`, `max_round`.
+- Colonne actions :
+  - `state != ended` → bouton ▶ (reprise) + bouton 🗑
+  - `state == ended` → bouton 🗑 uniquement
+- **Reprise** : reconstruire le `SessionState` complet depuis le document `activity_runs` (pas repartir de `activity_instances`), puis afficher le panneau de pilotage MJ (historique exchanges, give_turn, next_round, end).
+- **Delete** — double confirmation :
+  1. "Supprimer ce run ?"
+  2. "Supprimer également les knowledge associés à cette activité ?" (oui / non)
+     - Si oui → `DELETE /bus/character_storage/dispatch` — supprime tous les `knowledge` dont `activity == run._id`
+     - Dans tous les cas → supprime le document `activity_runs`
+
+**Panneau de pilotage MJ** (inchangé fonctionnellement) : rounds, instruction textarea, boutons give_turn par joueur, historique exchanges (ExchangeCard / SkippedCard). Accessible via ▶ reprise ou après lancement depuis Instances.
+
+**Backend** :
+- Nouvelle commande `activity_storage/runs.list` avec filtre + tri (ou adapter l'existante).
+- Nouvelle commande `activity/resume(run_id)` — rebuild `SessionState` depuis `activity_runs`.
+- `character_storage/knowledge.delete_by_activity(activity_id)` ou filtre sur `knowledge.delete`.
 
 ---
-
 
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
@@ -142,6 +158,35 @@ Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis pour `sha
 _(vide)_
 
 ## DONE
+
+### 2026-04-19 — `activity_engine` + `activity_runs` + Dashboard MJ v1
+
+- **`core/errors.py`** : `InstanceNotFound` ajouté.
+- **`services/activity_service/engine.py`** : orchestrateur de session — `SessionState` (dataclass), `run()` / `give_turn()` (thread non-bloquant) / `next_round()` / `end()`. Circuit breaker (3 retries par speaker/round), persistance `activity_runs` à chaque mutation.
+- **`services/activity_storage/`** : 4 nouvelles méthodes ABC + implémentation MongoDB (`list_runs/get_run/put_run/delete_run`), collection `activity_runs` configurée dans `simphonia.yaml`.
+- **`commands/activity.py`** : 4 commandes bus `activity/run`, `activity/give_turn`, `activity/next_round`, `activity/end`.
+- **`http/routes.py`** : endpoint SSE `GET /bus/activity/stream/{session_id}`.
+- **`services/activity_service/context_builder.py`** : `build_system_prompt` étendu avec `system_schemas: list[dict]` — injecte les schémas JSON activés dans le system prompt.
+- **`logging.yaml`** : handler `file_activity` + logger `simphonia.activity` (console + fichier).
+- **simweb — Dashboard MJ v1** : `ActivityDashboardPanel.jsx` — sélection d'instance → session MJ (SSE, instruction textarea, boutons joueurs, historique exchanges avec public/private/whisper). `SkippedCard` + `ExchangeCard`. Sidebar section "Jeu".
+- **simweb — `StorageInstancesPanel.jsx`** : liste ordonnée de joueurs avec drag-and-drop natif (`PlayerOrderList`) remplace les checkboxes.
+- **`index.css`** : styles dashboard complets, fix layout scroll (chain `flex: 1; min-height: 0`).
+- Fixes : provider resolution dict vs list, messages vides (fallback "C'est ton tour"), `has_schema` corrigé vers `system_schemas`, whisper transmis dans SSE.
+- Validation utilisateur : OK 2026-04-19.
+
+---
+
+### 2026-04-19 — ACB `activity_context_builder`
+
+- `format_exchange(speaker, raw_response)` — markdown public-only, `mood` public, `inner_thought` privé.
+- `build_system_prompt(player, instance, activity, scene, character, knowledge_entries, system_schemas)` — ordre : schema JSON > scène > règles > knowledge > fiche personnage.
+- `build_messages(player, instance, exchange_history, ...)` — amorce > event > whisper > historique > instruction MJ.
+- `get_tools(activity=None)` — retourne `[memory/recall]` en format provider-agnostic.
+- `src/simphonia/utils/parser.py` — port de `parse_llm_json` depuis Symphonie.
+- Spec dans `documents/activity_context_builder.md`.
+- Validation utilisateur : OK 2026-04-19 (validé via activity_engine opérationnel).
+
+---
 
 ### 2026-04-19 — Instances d'activité + providers/list + simweb Storage
 

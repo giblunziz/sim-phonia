@@ -10,13 +10,20 @@ import StorageActivitiesPanel from './components/storage/StorageActivitiesPanel.
 import StorageSchemasPanel from './components/storage/StorageSchemasPanel.jsx';
 import StorageScenesPanel from './components/storage/StorageScenesPanel.jsx';
 import StorageInstancesPanel from './components/storage/StorageInstancesPanel.jsx';
+import ActivityDashboardPanel from './components/activity/ActivityDashboardPanel.jsx';
 
 export default function App() {
-  const [session, setSession]         = useState(null);
-  const [activePanel, setActivePanel] = useState('chat');
+  const [session, setSession]               = useState(null);
+  const [activePanel, setActivePanel]       = useState('chat');
+  const [activitySession, setActivitySession] = useState(null);
 
   const handleNavigate = (panel) => {
     setActivePanel(panel);
+  };
+
+  const handleActivityLaunch = (sessionData) => {
+    setActivitySession(sessionData);
+    setActivePanel('activity-dashboard');
   };
 
   const renderPanel = () => {
@@ -40,7 +47,12 @@ export default function App() {
       case 'storage-scenes':
         return <StorageScenesPanel />;
       case 'storage-instances':
-        return <StorageInstancesPanel />;
+        return <StorageInstancesPanel onLaunch={handleActivityLaunch} />;
+      case 'activity-dashboard':
+        return <ActivityDashboardPanel
+          initialSession={activitySession}
+          onSessionClear={() => setActivitySession(null)}
+        />;
       default:
         return null;
     }

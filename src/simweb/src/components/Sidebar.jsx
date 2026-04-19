@@ -7,6 +7,11 @@ const SECTIONS = [
     items: [{ id: 'chat', label: 'Conversation' }],
   },
   {
+    id: 'jeu',
+    label: 'Jeu',
+    items: [{ id: 'activity-dashboard', label: 'Dashboard MJ' }],
+  },
+  {
     id: 'storage',
     label: 'Storage',
     items: [
@@ -29,7 +34,7 @@ const SECTIONS = [
 ];
 
 export default function Sidebar({ open, activePanel, onNavigate, onToggle }) {
-  const [expanded, setExpanded] = useState({ chat: true, admin: true, storage: true });
+  const [expanded, setExpanded] = useState({ chat: true, jeu: true, admin: true, storage: true });
 
   const toggleSection = (id) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));

@@ -66,3 +66,9 @@ def knowledge_update(knowledge_id: str, patch: dict) -> dict | None:
          description="Supprime une entrée knowledge par son _id")
 def knowledge_delete(knowledge_id: str) -> bool:
     return character_storage.get().delete_knowledge(knowledge_id)
+
+
+@command(bus=CHARACTER_STORAGE_BUS, code="knowledge.delete_by_activity",
+         description="Supprime toutes les entrées knowledge d'une activité — retourne le nombre supprimé")
+def knowledge_delete_by_activity(activity_id: str) -> int:
+    return character_storage.get().delete_knowledge_by_activity(activity_id)

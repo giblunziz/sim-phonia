@@ -103,6 +103,15 @@ class LLMError(SimphoniaError):
         return f"LLM error: {self.reason}"
 
 
+class InstanceNotFound(SimphoniaError, KeyError):
+    def __init__(self, instance_id: str) -> None:
+        super().__init__(instance_id)
+        self.instance_id = instance_id
+
+    def __str__(self) -> str:
+        return f"activity instance not found: {self.instance_id!r}"
+
+
 class DispatchError(SimphoniaError):
     def __init__(self, bus_name: str, code: str, cause: BaseException) -> None:
         super().__init__(str(cause))

@@ -80,6 +80,23 @@ class ActivityStorageService(ABC):
     def delete_instance(self, instance_id: str) -> bool:
         """Retourne True si supprimé, False si absent."""
 
+    # ── activity_runs ─────────────────────────────────────────────
+
+    @abstractmethod
+    def list_runs(self, *, filter: dict | None = None) -> list[dict]: ...
+
+    @abstractmethod
+    def get_run(self, run_id: str) -> dict | None:
+        """Retourne None si absent."""
+
+    @abstractmethod
+    def put_run(self, run_id: str, data: dict) -> dict:
+        """Upsert sur _id (run_id). ts_created/ts_updated auto-gérés. Retourne le document."""
+
+    @abstractmethod
+    def delete_run(self, run_id: str) -> bool:
+        """Retourne True si supprimé, False si absent."""
+
 
 def build_activity_storage_service(service_config: dict) -> ActivityStorageService:
     strategy = service_config.get("strategy", "mongodb_strategy")
@@ -96,6 +113,7 @@ def build_activity_storage_service(service_config: dict) -> ActivityStorageServi
             schemas_collection=collections.get("schemas", "schemas"),
             scenes_collection=collections.get("scenes", "scenes"),
             instances_collection=collections.get("activity_instances", "activity_instances"),
+            runs_collection=collections.get("activity_runs", "activity_runs"),
         )
 
     raise ValueError(f"Unknown activity_storage strategy: {strategy!r}")

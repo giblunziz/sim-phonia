@@ -110,6 +110,7 @@ def build_system_prompt(
     scene: dict,
     character: dict,
     knowledge_entries: list[dict],
+    system_schemas: list[dict] | None = None,
 ) -> str:
     """Assemble le system prompt complet pour un joueur à un tour donné.
 
@@ -122,15 +123,16 @@ def build_system_prompt(
     """
     parts = []
 
-    # 1. Schema JSON
-    json_schema = activity.get("json_schema", "")
-    if json_schema:
-        schema_text = json_schema if isinstance(json_schema, str) else json.dumps(json_schema, ensure_ascii=False)
-        parts.append(
-            "Réponds UNIQUEMENT en JSON valide respectant ce schéma. "
-            "Ne l'encadre pas de bloc de code markdown.\n"
-            + schema_text
-        )
+    # 1. Schemas system activés (résolus par l'engine depuis activity.system[enabled])
+    for schema in (system_schemas or []):
+        lines = ["Réponds UNIQUEMENT en JSON valide respectant ce schéma. Ne l'encadre pas de bloc de code markdown."]
+        prompt_text = schema.get("prompt", "").strip()
+        if prompt_text:
+            lines.append(prompt_text)
+        payload = schema.get("payload")
+        if payload:
+            lines.append(json.dumps(payload, ensure_ascii=False) if not isinstance(payload, str) else payload)
+        parts.append("\n".join(lines))
 
     # 2. Scène
     scene_content = scene.get("content", "")

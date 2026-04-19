@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   instanceList, instancePut, instanceDelete,
   activityList, sceneList, providerList, listCharacters,
+  activityRun,
 } from '../../api/simphonia.js';
 import MarkdownEditor from '../common/MarkdownEditor.jsx';
 
@@ -65,6 +66,78 @@ function formToPayload(f) {
     events:       f.events,
     instructions: f.instructions,
   };
+}
+
+// ── PlayerOrderList ────────────────────────────────────────────────────────────
+
+function PlayerOrderList({ players, allChars, onChange, disabled }) {
+  const dragIdx = useRef(null);
+
+  const addPlayer = (name) => {
+    if (!players.includes(name)) onChange([...players, name]);
+  };
+
+  const removePlayer = (name) =>
+    onChange(players.filter((p) => p !== name));
+
+  const onDragStart = (i) => { dragIdx.current = i; };
+
+  const onDragOver = (e, i) => {
+    e.preventDefault();
+    if (dragIdx.current === null || dragIdx.current === i) return;
+    const next = [...players];
+    const [moved] = next.splice(dragIdx.current, 1);
+    next.splice(i, 0, moved);
+    dragIdx.current = i;
+    onChange(next);
+  };
+
+  const available = allChars.filter((c) => !players.includes(c));
+
+  return (
+    <div>
+      {/* liste ordonnée */}
+      <div className="player-order-list">
+        {players.length === 0 && (
+          <p className="empty-note" style={{ margin: '0.4rem 0', fontSize: '0.82rem' }}>
+            Aucun joueur — ajoutez-en ci-dessous.
+          </p>
+        )}
+        {players.map((p, i) => (
+          <div
+            key={p}
+            className={`player-order-item${disabled ? ' disabled' : ''}`}
+            draggable={!disabled}
+            onDragStart={() => onDragStart(i)}
+            onDragOver={(e) => onDragOver(e, i)}
+            onDragEnd={() => { dragIdx.current = null; }}
+          >
+            <span className="player-order-handle" title="Glisser pour réordonner">⠿</span>
+            <span className="player-order-pos">{i + 1}</span>
+            <span className="player-order-name kc-tag">{p}</span>
+            {!disabled && (
+              <button type="button" className="btn-row btn-row-danger"
+                style={{ marginLeft: 'auto' }}
+                onClick={() => removePlayer(p)}>✕</button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* personnages disponibles */}
+      {!disabled && available.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+          {available.map((c) => (
+            <button key={c} type="button" className="btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}
+              onClick={() => addPlayer(c)}>
+              + {c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── EventsList ─────────────────────────────────────────────────────────────────
@@ -165,7 +238,7 @@ function InstructionsList({ items, onChange, disabled, players }) {
 
 // ── Panneau principal ───────────────────────────────────────────────────────────
 
-export default function StorageInstancesPanel() {
+export default function StorageInstancesPanel({ onLaunch }) {
   const [entries, setEntries]     = useState([]);
   const [activities, setActivities] = useState([]);
   const [scenes, setScenes]       = useState([]);
@@ -193,13 +266,11 @@ export default function StorageInstancesPanel() {
 
   const set = (key, val) => setForm((p) => ({ ...p, [key]: val }));
 
-  const togglePlayer = (name) =>
+  const setPlayers = (next) =>
     setForm((p) => ({
       ...p,
-      players: p.players.includes(name)
-        ? p.players.filter((x) => x !== name)
-        : [...p.players, name],
-      starter: p.starter === name ? '' : p.starter,
+      players: next,
+      starter: next.includes(p.starter) ? p.starter : '',
     }));
 
   const openCreate = () => { setForm(EMPTY_FORM); setEditId(null); setError(null); setShowForm(true); };
@@ -228,6 +299,19 @@ export default function StorageInstancesPanel() {
     await instanceDelete(id);
     setMsg('Instance supprimée.');
     await load();
+  };
+
+  const handleLaunch = async (id) => {
+    setBusy((b) => ({ ...b, [id]: true }));
+    setError(null);
+    try {
+      const result = await activityRun(id);
+      if (onLaunch) onLaunch(result);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy((b) => ({ ...b, [id]: false }));
+    }
   };
 
   return (
@@ -323,17 +407,13 @@ export default function StorageInstancesPanel() {
 
             {/* joueurs */}
             <div className="field">
-              <label>Joueurs</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {chars.map((c) => (
-                  <label key={c} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={form.players.includes(c)}
-                      onChange={() => togglePlayer(c)} disabled={busy.save} />
-                    <span className={form.players.includes(c) ? 'kc-tag' : ''}
-                      style={{ fontSize: '0.85rem' }}>{c}</span>
-                  </label>
-                ))}
-              </div>
+              <label>Joueurs <span className="label-opt">(ordre de jeu — glisser pour réordonner)</span></label>
+              <PlayerOrderList
+                players={form.players}
+                allChars={chars}
+                onChange={setPlayers}
+                disabled={busy.save}
+              />
             </div>
 
             {/* starter */}
@@ -397,6 +477,15 @@ export default function StorageInstancesPanel() {
                   <span className="kc-dim">{formatTs(e.ts_updated)}</span>
                   <span className="kc-actions">
                     <button className="btn-row" onClick={() => openEdit(e)}>✎</button>
+                    <button
+                      className="btn-row"
+                      style={{ background: 'var(--accent)', color: '#fff', fontWeight: 600 }}
+                      disabled={busy[e._id]}
+                      title="Lancer l'activité"
+                      onClick={() => handleLaunch(e._id)}
+                    >
+                      {busy[e._id] ? '…' : '▶'}
+                    </button>
                     <button className="btn-row btn-row-danger" onClick={() => handleDelete(e._id)}>✕</button>
                   </span>
                 </div>

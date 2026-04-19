@@ -53,6 +53,10 @@ class CharacterStorageService(ABC):
     def delete_knowledge(self, knowledge_id: str) -> bool:
         """Retourne True si supprimé, False si absent."""
 
+    @abstractmethod
+    def delete_knowledge_by_activity(self, activity_id: str) -> int:
+        """Supprime toutes les entrées knowledge liées à activity_id. Retourne le nombre supprimé."""
+
 
 def build_character_storage_service(service_config: dict) -> CharacterStorageService:
     strategy = service_config.get("strategy", "mongodb_strategy")

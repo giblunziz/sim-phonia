@@ -106,3 +106,29 @@ def instances_put(instance_id: str, data: dict) -> dict:
          description="Supprime une instance par son slug")
 def instances_delete(instance_id: str) -> bool:
     return activity_storage.get().delete_instance(instance_id)
+
+
+# ── activity_runs ──────────────────────────────────────────────────────────────
+
+@command(bus=ACTIVITY_STORAGE_BUS, code="runs.list",
+         description="Liste tous les runs d'activité")
+def runs_list(filter: dict | None = None) -> list[dict]:
+    return activity_storage.get().list_runs(filter=filter)
+
+
+@command(bus=ACTIVITY_STORAGE_BUS, code="runs.get",
+         description="Retourne un run par son _id (instance_slug_YYMMDD_HHMM)")
+def runs_get(run_id: str) -> dict | None:
+    return activity_storage.get().get_run(run_id)
+
+
+@command(bus=ACTIVITY_STORAGE_BUS, code="runs.put",
+         description="Upsert d'un run (run_id auto-géré par l'engine)")
+def runs_put(run_id: str, data: dict) -> dict:
+    return activity_storage.get().put_run(run_id, data)
+
+
+@command(bus=ACTIVITY_STORAGE_BUS, code="runs.delete",
+         description="Supprime un run par son _id")
+def runs_delete(run_id: str) -> bool:
+    return activity_storage.get().delete_run(run_id)

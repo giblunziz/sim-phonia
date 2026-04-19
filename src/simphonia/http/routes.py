@@ -50,6 +50,15 @@ def dispatch(bus_name: str, req: DispatchRequest) -> DispatchResponse:
     return DispatchResponse(result=result)
 
 
+@router.get("/bus/activity/stream/{session_id}")
+async def stream_activity_events(session_id: str) -> StreamingResponse:
+    return StreamingResponse(
+        sse.subscribe(session_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @router.get("/bus/chat/stream/{session_id}")
 async def stream_chat_events(session_id: str) -> StreamingResponse:
     return StreamingResponse(

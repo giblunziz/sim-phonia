@@ -34,6 +34,7 @@ services:
       schemas: schemas
       scenes: scenes
       activity_instances: activity_instances
+      activity_runs: activity_runs
 
   character_service:
     strategy: mongodb_strategy

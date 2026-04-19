@@ -26,6 +26,7 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [simweb.md](./documents/simweb.md) — module front-end React/Vite : écrans StartScreen/ChatScreen, API HTTP, SSE pour mode autonome, câblage serveur
 - [memory_service.md](./documents/memory_service.md) — cahier des charges du `memory_service` (RAG contextuel, ChromaDB, interface recall/stats/resync, bus, points ouverts)
 - [service_character_storage.md](./documents/service_character_storage.md) — cahier des charges du `character_storage` (source de vérité MongoDB, collections `characters` + `knowledge`, CRUD, bus admin, intégration simweb)
+- [activity_engine.md](./documents/activity_engine.md) — cahier des charges de l'`activity_engine` (orchestrateur de session MJ-driven, SessionState, commandes bus activity, SSE, circuit breaker, persistance MongoDB)
 
 ### Études & synthèses
 

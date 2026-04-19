@@ -64,6 +64,14 @@ handlers:
     encoding: utf-8
     mode: w
 
+  file_activity:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/activity.log
+    encoding: utf-8
+    mode: w
+
 loggers:
   simphonia.chat:
     level: DEBUG
@@ -93,6 +101,11 @@ loggers:
   simphonia.providers.ollama:
     level: DEBUG
     handlers: [console, file_providers]
+    propagate: false
+
+  simphonia.activity:
+    level: DEBUG
+    handlers: [console, file_activity]
     propagate: false
 
   simphonia.chromadb:

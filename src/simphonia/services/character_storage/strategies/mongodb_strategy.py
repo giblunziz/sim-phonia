@@ -115,3 +115,6 @@ class MongoCharacterStorage(CharacterStorageService):
         except Exception:
             return False
         return self._knowledge.delete_one({"_id": oid}).deleted_count == 1
+
+    def delete_knowledge_by_activity(self, activity_id: str) -> int:
+        return self._knowledge.delete_many({"activity": activity_id}).deleted_count
