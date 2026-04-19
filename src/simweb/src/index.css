@@ -823,3 +823,123 @@ input:not([type]) {
 
 input[type="text"]:focus,
 input:not([type]):focus { outline: none; border-color: var(--accent); }
+
+/* ── MarkdownEditor ───────────────────────────────────────────── */
+.md-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.md-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+}
+
+.md-editor-label {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.md-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  transition: all 0.15s;
+}
+.md-tab:hover { border-color: var(--border); color: var(--text); }
+.md-tab-active { border-color: var(--accent) !important; color: var(--accent) !important; }
+
+.md-textarea {
+  background: var(--bg);
+  border: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  outline: none;
+  padding: 0.75rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.md-preview {
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  min-height: 6rem;
+  padding: 0.75rem 1rem;
+}
+.md-preview h1, .md-preview h2, .md-preview h3 {
+  color: var(--accent);
+  margin: 0.8rem 0 0.4rem;
+}
+.md-preview p { margin-bottom: 0.5rem; }
+.md-preview ul, .md-preview ol { margin: 0.4rem 0 0.5rem 1.2rem; }
+.md-preview code {
+  background: var(--surface);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.82em;
+  padding: 0.1em 0.35em;
+}
+.md-preview pre { background: var(--surface); border-radius: var(--radius-sm); padding: 0.6rem; overflow-x: auto; }
+.md-preview pre code { background: none; padding: 0; }
+.md-empty { color: var(--text-dim); font-style: italic; }
+
+/* ── JsonEditor ───────────────────────────────────────────────── */
+.json-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.json-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+}
+
+.json-editor-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+.json-editor-ok    { font-size: 0.75rem; color: #6fcf97; flex: 1; }
+.json-editor-error { font-size: 0.75rem; color: var(--danger); flex: 1; }
+
+.json-editor-fmt {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.55rem;
+  margin-left: auto;
+}
+
+.json-editor-textarea {
+  background: var(--bg);
+  border: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  outline: none;
+  padding: 0.75rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.json-editor-invalid { border-top: 2px solid var(--danger); }

@@ -5,6 +5,17 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
+### ACB — `activity_context_builder` (validation différée — sera testée avec l'activity_engine)
+
+Implémenté dans `src/simphonia/services/activity_service/context_builder.py`. Spec dans `documents/activity_context_builder.md`.
+
+- `format_exchange(speaker, raw_response)` — port fidèle du legacy Symphonie, markdown public-only, `mood` public, `inner_thought` privé
+- `build_system_prompt(player, instance, activity, scene, character, knowledge_entries)` — ordre : schema JSON > scène > règles > impressions knowledge > fiche personnage
+- `build_messages(player, instance, exchange_history, ...)` — ordre : amorce > event > whisper > historique (role=assistant/user) > instruction MJ
+- `get_tools(activity=None)` — retourne `[memory/recall]` en format provider-agnostic
+- `src/simphonia/utils/parser.py` créé — port de `parse_llm_json` depuis Symphonie
+
+---
 
 
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
@@ -16,13 +27,11 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 | # | Étape | Livrable |
 |---|---|---|
 | ~~#10~~ | ~~`@command` étendu~~ | ✅ livré 2026-04-17 (voir `DONE`) |
-| **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
-| **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
-| **#13** | Validation startup | Cascade orpheline → fail | `mcp=True` sans `from_char` → fail |
+| ~~#11~~ | ~~`@cascade` + `ShortCircuit`~~ | → déplacé en WARM |
+| ~~#12~~ | ~~`Bus.dispatch` refactor~~ | → déplacé en WARM |
+| ~~#13~~ | ~~Validation startup~~ | → déplacé en WARM |
 | ~~#14~~ | ~~Façade MCP~~ | ✅ livré 2026-04-19 (voir `DONE`) |
-| **#15** | Smoke test E2E | Mock `memory/recall` + cascade `decay/after_recall`, validation via simcli + via client MCP |
-
-**Prochaine étape : #11** (`@cascade` + `ShortCircuit` — prérequis pour #12/#13/#15).
+| **#15** | Smoke test E2E | Bloqué sur #11/#12/#13 (en WARM) |
 
 **Hors scope de ce bloc** : moteur de tour joueur, authentification MCP.
 
@@ -98,6 +107,18 @@ Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle,
 
 ## WARM
 
+### 🔧 INFRA — Cascades + validation startup
+
+| # | Étape | Livrable |
+|---|-------|----------|
+| **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
+| **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
+| **#13** | Validation startup | Cascade orpheline → fail ; `mcp=True` sans `from_char` → fail |
+
+Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis pour `shadow_memory_service` (H5.c) et smoke test E2E (#15).
+
+---
+
 ### W1 — Compression mémoire (recaps)
 
 - Mécanisme de recap quand `memory.slots` du perso sature
@@ -121,6 +142,35 @@ Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle,
 _(vide)_
 
 ## DONE
+
+### 2026-04-19 — Instances d'activité + providers/list + simweb Storage
+
+- **`commands/providers.py`** : bus `providers`, commande `list` → `provider_registry.list_names()`.
+- **`activity_storage`** étendu : collection `activity_instances`, 4 commandes `instances.list/get/put/delete`.
+- **`simphonia.yaml`** : `activity_instances: activity_instances`.
+- **simweb — Storage > Instances** : formulaire complet — activité/scène/providers (selects), joueurs (checkboxes), starter (select dynamique sur les joueurs sélectionnés), max_rounds/temperature/turning_mode, amorce (`MarkdownEditor`), events[] (round + textarea), instructions/whispers[] (round + destinataire toggle personnage/position + textarea).
+- Validation utilisateur : OK 2026-04-19.
+
+### 2026-04-19 — Référentiel scènes + simweb Storage
+
+- **`activity_storage`** étendu : collection `scenes` (list/get/put/delete), `scenes_collection` dans factory + YAML.
+- **`commands/activity_storage.py`** : 4 commandes `scenes.list/get/put/delete`.
+- **simweb — Storage > Scènes** : slug, description (courte, text input), contenu scène (`MarkdownEditor`).
+- **simweb — Storage > Activités** : champ `scene` retiré (la scène appartient à l'instance, pas au template).
+- Validation utilisateur : OK 2026-04-19.
+
+### 2026-04-19 — Référentiel activités + schémas + simweb Storage
+
+- **`services/activity_storage/`** : ABC `ActivityStorageService` + factory + singleton. Collections `activities` et `schemas`. Stratégie `mongodb_strategy` — upsert via `$setOnInsert` (ts_created) / `$set` (ts_updated), `_id` = slug utilisateur, `datetime → ISO-8601`.
+- **`commands/activity_storage.py`** : 8 commandes sur le bus `activity_storage` (`activities.list/get/put/delete`, `schemas.list/get/put/delete`). Pas de MCP.
+- **`simphonia.yaml`** : section `activity_storage` (collections `activities` + `schemas`).
+- **`bootstrap.py`** : `activity_storage.init()` après `character_storage`.
+- **simweb — Storage > Activités** : formulaire complet (slug, label, description, scène, règles MJ + Joueurs en `MarkdownEditor`, prompts système avec select schéma, winning mode avec deck de cartes, debrief avec select schéma).
+- **simweb — Storage > Schémas** : grille + formulaire (slug, prompt textarea, payload `JsonEditor`).
+- **`MarkdownEditor.jsx`** : composant réutilisable — textarea monospace + aperçu rendu (`react-markdown`), bascule Éditer/Aperçu.
+- **`JsonEditor.jsx`** : composant réutilisable — textarea monospace + validation JSON live + bouton Formater + indicateur ✓/erreur.
+- **`react-markdown`** ajouté aux dépendances `simweb`.
+- Validation utilisateur : OK 2026-04-19.
 
 ### 2026-04-19 — `character_storage` + refactor + `memory/resync` + simweb Storage
 

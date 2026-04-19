@@ -62,6 +62,30 @@ export const storageDeleteKnowledge = (knowledge_id)            => dispatch('cha
 
 export const memoryResync = () => dispatch('memory', 'resync');
 
+// ── activity_storage ──────────────────────────────────────────────────────────
+
+export const activityList   = (filter)                => dispatch('activity_storage', 'activities.list',   { filter });
+export const activityGet    = (activity_id)           => dispatch('activity_storage', 'activities.get',    { activity_id });
+export const activityPut    = (activity_id, data)     => dispatch('activity_storage', 'activities.put',    { activity_id, data });
+export const activityDelete = (activity_id)           => dispatch('activity_storage', 'activities.delete', { activity_id });
+
+export const schemaList   = (filter)              => dispatch('activity_storage', 'schemas.list',   { filter });
+export const schemaGet    = (schema_id)           => dispatch('activity_storage', 'schemas.get',    { schema_id });
+export const schemaPut    = (schema_id, data)     => dispatch('activity_storage', 'schemas.put',    { schema_id, data });
+export const schemaDelete = (schema_id)           => dispatch('activity_storage', 'schemas.delete', { schema_id });
+
+export const sceneList   = (filter)             => dispatch('activity_storage', 'scenes.list',   { filter });
+export const sceneGet    = (scene_id)           => dispatch('activity_storage', 'scenes.get',    { scene_id });
+export const scenePut    = (scene_id, data)     => dispatch('activity_storage', 'scenes.put',    { scene_id, data });
+export const sceneDelete = (scene_id)           => dispatch('activity_storage', 'scenes.delete', { scene_id });
+
+export const instanceList   = (filter)                  => dispatch('activity_storage', 'instances.list',   { filter });
+export const instanceGet    = (instance_id)             => dispatch('activity_storage', 'instances.get',    { instance_id });
+export const instancePut    = (instance_id, data)       => dispatch('activity_storage', 'instances.put',    { instance_id, data });
+export const instanceDelete = (instance_id)             => dispatch('activity_storage', 'instances.delete', { instance_id });
+
+export const providerList = () => dispatch('providers', 'list');
+
 // ── memory ────────────────────────────────────────────────────────────────────
 
 export async function memoryRecall(fromChar, context, about) {

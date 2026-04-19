@@ -25,6 +25,16 @@ services:
       characters: characters
       knowledge: knowledge
 
+  activity_storage:
+    strategy: mongodb_strategy
+    database_uri: ${MONGO_URI}
+    database_name: ${MONGO_DATABASE}
+    collections:
+      activities: activities
+      schemas: schemas
+      scenes: scenes
+      activity_instances: activity_instances
+
   character_service:
     strategy: mongodb_strategy
 #    strategy: json_strategy

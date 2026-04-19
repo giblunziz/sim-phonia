@@ -9,7 +9,7 @@ from simphonia.commands.system import SYSTEM_BUS  # noqa: E402
 from simphonia.core import default_registry  # noqa: E402
 from simphonia.core.discovery import discover  # noqa: E402
 from simphonia.http.app import create_app  # noqa: E402
-from simphonia.services import character_service, character_storage, chat_service, configuration_service, memory_service, provider_registry  # noqa: E402
+from simphonia.services import activity_storage, character_service, character_storage, chat_service, configuration_service, memory_service, provider_registry  # noqa: E402
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +19,7 @@ COMMANDS_PACKAGE = "simphonia.commands"
 def build_app() -> FastAPI:
     configuration_service.init()
     character_storage.init(configuration_service.section("services.character_storage"))
+    activity_storage.init(configuration_service.section("services.activity_storage"))
     provider_registry.init(configuration_service.section("providers"))
 
     registry = default_registry()
