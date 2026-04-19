@@ -6,7 +6,55 @@ sélectionnée via la configuration YAML (`services.character_service`).
 Voir `documents/character_service.md` et `documents/configuration.md`.
 """
 
+import logging
+import unicodedata
 from abc import ABC, abstractmethod
+
+log = logging.getLogger("simphonia.character")
+
+
+def _normalize(s: str) -> str:
+    """Lowercase + suppression des accents (NFD, catégorie Mn)."""
+    s = s.lower().strip()
+    s = unicodedata.normalize("NFD", s)
+    return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+
+def _resolve_identifier(name: str, cache: dict) -> str | None:
+    """Résout un nom LLM vers un _id canonique du cache.
+
+    Stratégie :
+      1. Match exact sur le nom normalisé
+      2. Split sur espaces / underscores, match sur chaque token
+      3. Match partiel (token contenu dans un _id ou inversement, min 3 chars)
+    """
+    if not name or not name.strip():
+        return None
+
+    normalized_ids = {_normalize(cid): cid for cid in cache}
+    norm = _normalize(name)
+
+    # 1. Exact
+    if norm in normalized_ids:
+        return normalized_ids[norm]
+
+    # 2. Token
+    tokens = norm.replace("_", " ").split()
+    for token in tokens:
+        if token in normalized_ids:
+            return normalized_ids[token]
+
+    # 3. Partiel
+    for token in tokens:
+        if len(token) < 3:
+            continue
+        for norm_id, canonical in normalized_ids.items():
+            if token in norm_id or norm_id in token:
+                log.info("get_identifier partiel : '%s' → '%s' (token '%s')", name, canonical, token)
+                return canonical
+
+    log.info("get_identifier non résolu : '%s' (tokens: %s)", name, tokens)
+    return None
 
 
 class CharacterService(ABC):
@@ -19,6 +67,14 @@ class CharacterService(ABC):
     @abstractmethod
     def get_character(self, name: str) -> dict:
         """Retourne la fiche complète d'un personnage (`dict` brut)."""
+
+    @abstractmethod
+    def get_identifier(self, name: str) -> str | None:
+        """Retourne le slug canonique (`_id`) correspondant à `name`, ou `None`.
+
+        Résolution : correspondance exacte sur `_id`, puis correspondance
+        normalisée (lowercase + sans accents).
+        """
 
     @abstractmethod
     def reset(self) -> int:
@@ -50,20 +106,7 @@ def build_character_service(service_config: dict) -> CharacterService:
         from simphonia.services.character_service.strategies.mongodb_strategy import (
             MongoCharacterService,
         )
-
-        database_uri = service_config.get("database_uri")
-        database_name = service_config.get("database_name")
-        if not isinstance(database_uri, str) or not database_uri:
-            raise RuntimeError(
-                "mongodb_strategy: `services.character_service.database_uri` manquant ou vide "
-                "(vérifier le YAML et l'interpolation ${MONGO_URI})"
-            )
-        if not isinstance(database_name, str) or not database_name:
-            raise RuntimeError(
-                "mongodb_strategy: `services.character_service.database_name` manquant ou vide "
-                "(vérifier le YAML et l'interpolation ${MONGO_DATABASE})"
-            )
-        return MongoCharacterService(database_uri=database_uri, database_name=database_name)
+        return MongoCharacterService()
 
     raise ValueError(f"Unknown character_service strategy: {strategy!r}")
 

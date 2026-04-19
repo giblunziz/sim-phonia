@@ -46,27 +46,7 @@ class ChatService(ABC):
 
 
 def _build_chat_logger(log_config: dict) -> logging.Logger:
-    """Construit le logger dédié au chat selon la sous-section `log:` du YAML."""
-    logger = logging.getLogger("simphonia.chat")
-
-    log_path = log_config.get("path")
-    reset_on_startup = log_config.get("reset_on_startup", False)
-
-    if log_path:
-        from pathlib import Path
-        from simphonia.config import PROJECT_ROOT
-
-        resolved = Path(log_path) if Path(log_path).is_absolute() else PROJECT_ROOT / log_path
-        resolved.parent.mkdir(parents=True, exist_ok=True)
-        mode = "w" if reset_on_startup else "a"
-        handler = logging.FileHandler(resolved, mode=mode, encoding="utf-8")
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)s %(name)s — %(message)s")
-        )
-        if not logger.handlers:
-            logger.addHandler(handler)
-
-    return logger
+    return logging.getLogger("simphonia.chat")
 
 
 def build_chat_service(

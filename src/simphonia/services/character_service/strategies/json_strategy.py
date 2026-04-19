@@ -9,7 +9,7 @@ import logging
 
 from simphonia.config import CHARACTERS_DIR
 from simphonia.core.errors import CharacterNotFound
-from simphonia.services.character_service import CharacterService
+from simphonia.services.character_service import CharacterService, _resolve_identifier
 
 log = logging.getLogger("simphonia.character")
 
@@ -58,6 +58,9 @@ class JsonCharacterService(CharacterService):
             return self._cache[name]
         except KeyError as exc:
             raise CharacterNotFound(name) from exc
+
+    def get_identifier(self, name: str) -> str | None:
+        return _resolve_identifier(name, self._cache)
 
     def reset(self) -> int:
         self._cache.clear()

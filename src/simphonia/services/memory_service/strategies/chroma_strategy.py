@@ -81,9 +81,9 @@ class ChromaMemoryService(MemoryService):
 
         query_embedding = self._embed(context)
 
-        log_chroma.debug("=" * 60)
-        log_chroma.debug("RECALL REQUEST")
-        log_chroma.debug(
+        log_chroma.info("=" * 60)
+        log_chroma.info("RECALL REQUEST")
+        log_chroma.info(
             json.dumps(
                 {
                     "from_char": from_char,
@@ -107,8 +107,8 @@ class ChromaMemoryService(MemoryService):
             include=["documents", "metadatas", "distances"],
         )
 
-        log_chroma.debug("RECALL RESPONSE")
-        log_chroma.debug(
+        log_chroma.info("RECALL RESPONSE")
+        log_chroma.info(
             json.dumps(
                 {
                     "documents": results.get("documents", []),
@@ -128,7 +128,7 @@ class ChromaMemoryService(MemoryService):
         for i, doc in enumerate(results["documents"][0]):
             meta = results["metadatas"][0][i]
             distance = results["distances"][0][i]
-            if distance < self._min_distance:
+            if distance > self._min_distance:
                 continue
             memories.append(
                 {
@@ -141,7 +141,7 @@ class ChromaMemoryService(MemoryService):
                 }
             )
 
-        log.debug(
+        log.info(
             "%s recall (%d candidats → %d retenus, slots=%d, load_factor=%.1f, min_dist=%.2f)",
             from_char,
             len(results["documents"][0]),
@@ -159,3 +159,50 @@ class ChromaMemoryService(MemoryService):
             "embedding_model": EMBEDDING_MODEL,
             "chroma_dir": str(CHROMA_DIR),
         }
+
+    def resync(self) -> dict:
+        from simphonia.services import character_storage  # import lazy
+
+        entries = character_storage.get().list_knowledge()
+        if not entries:
+            log.info("resync : aucune entrée knowledge à indexer")
+            return {"reindexed": 0}
+
+        log.info("resync : suppression collection '%s'...", COLLECTION_NAME)
+        self._client.delete_collection(COLLECTION_NAME)
+        self._collection = self._client.get_or_create_collection(
+            name=COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine"},
+        )
+
+        ids, documents, metadatas = [], [], []
+        for entry in entries:
+            value = entry.get("value", "")
+            if not value:
+                continue
+            ids.append(str(entry.get("_id", "")))
+            documents.append(value)
+            metadatas.append({
+                "about":    entry.get("about", ""),
+                "activity": entry.get("activity", ""),
+                "category": entry.get("category", ""),
+                "from":     entry.get("from", ""),
+                "scene":    entry.get("scene", ""),
+                "ts":       str(entry.get("ts", "")),
+            })
+
+        BATCH = 100
+        for i in range(0, len(ids), BATCH):
+            batch_ids  = ids[i:i + BATCH]
+            batch_docs = documents[i:i + BATCH]
+            batch_meta = metadatas[i:i + BATCH]
+            embeddings = [self._embed(d) for d in batch_docs]
+            self._collection.add(
+                ids=batch_ids,
+                documents=batch_docs,
+                metadatas=batch_meta,
+                embeddings=embeddings,
+            )
+
+        log.info("resync terminé — %d documents indexés", len(ids))
+        return {"reindexed": len(ids)}

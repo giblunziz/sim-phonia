@@ -1,0 +1,105 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  console:
+    format: "%(asctime)s %(message)s"
+    datefmt: "%H:%M:%S"
+  file:
+    format: "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: console
+    stream: ext://sys.stdout
+
+  file_chat:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/chat.log
+    encoding: utf-8
+    mode: w
+
+  file_memory:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/memory.log
+    encoding: utf-8
+    mode: w
+
+  file_character:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/character.log
+    encoding: utf-8
+    mode: w
+
+  file_mcp:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/mcp.log
+    encoding: utf-8
+    mode: w
+
+  file_providers:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/providers.log
+    encoding: utf-8
+    mode: w
+
+  file_chromadb:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: file
+    filename: logs/chromadb.log
+    encoding: utf-8
+    mode: w
+
+loggers:
+  simphonia.chat:
+    level: DEBUG
+    handlers: [console, file_chat]
+    propagate: false
+
+  simphonia.memory:
+    level: DEBUG
+    handlers: [console, file_memory]
+    propagate: false
+
+  simphonia.character:
+    level: DEBUG
+    handlers: [console, file_character]
+    propagate: false
+
+  simphonia.mcp:
+    level: DEBUG
+    handlers: [console, file_mcp]
+    propagate: false
+
+  simphonia.providers.anthropic:
+    level: DEBUG
+    handlers: [console, file_providers]
+    propagate: false
+
+  simphonia.providers.ollama:
+    level: DEBUG
+    handlers: [console, file_providers]
+    propagate: false
+
+  simphonia.chromadb:
+    level: DEBUG
+    handlers: [file_chromadb]
+    propagate: false
+
+root:
+  level: DEBUG
+  handlers: [console]

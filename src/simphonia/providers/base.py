@@ -1,6 +1,10 @@
 """Interface commune pour les providers LLM."""
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
+
+# Signature : (tool_name, tool_args) → résultat texte
+ToolExecutor = Callable[[str, dict], str]
 
 
 @dataclass
@@ -23,8 +27,15 @@ class LLMProvider(ABC):
         self.temperature = temperature
 
     @abstractmethod
-    def call(self, system_prompt: str, messages: list,
-             identity: str = "", temperature: float = None) -> tuple[str | None, LLMStats]:
+    def call(
+        self,
+        system_prompt: str,
+        messages: list,
+        identity: str = "",
+        temperature: float = None,
+        tools: list[dict] | None = None,
+        tool_executor: ToolExecutor | None = None,
+    ) -> tuple[str | None, LLMStats]:
         """
         Appelle le LLM et retourne (réponse_texte, stats).
 
@@ -33,6 +44,8 @@ class LLMProvider(ABC):
             messages: l'historique [{role, content}, ...]
             identity: rappel d'identité ("you are Théo")
             temperature: override de la température (optionnel)
+            tools: liste de tool definitions (format provider-agnostic)
+            tool_executor: callable (name, args) → str, exécute un tool call
 
         Returns:
             (reply_text, LLMStats) ou (None, LLMStats) en cas d'erreur

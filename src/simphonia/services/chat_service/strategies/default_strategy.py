@@ -12,9 +12,10 @@ from datetime import datetime
 
 from simphonia.core import default_registry
 from simphonia.core.errors import CharacterNotFound, InvalidParticipant, LLMError, SessionNotFound
-from simphonia.providers.base import LLMProvider
+from simphonia.providers.base import LLMProvider, ToolExecutor
 from simphonia.services.chat_service import ChatService
 from simphonia.services.chat_service.types import DialogueMessage, DialogueState
+from simphonia.services import memory_service
 
 
 class DefaultChatService(ChatService):
@@ -47,8 +48,12 @@ class DefaultChatService(ChatService):
             if human
             else f"Tu parles avec le personnage {from_char}."
         )
+        memory_hint = (
+            "Tu as accès à l'outil `recall` pour consulter tes souvenirs sur quelqu'un avant de répondre. "
+            "Utilise-le librement si la situation le nécessite."
+        )
         schema = (
-            'Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ni après.\n'
+            'Ta réponse finale doit être UNIQUEMENT un objet JSON valide, sans texte avant ni après.\n'
             'Format obligatoire :\n'
             '{"talk": "Ta réponse complète en un seul bloc de texte."}\n\n'
             'IMPORTANT :\n'
@@ -58,7 +63,42 @@ class DefaultChatService(ChatService):
             'Champs futurs (non requis maintenant) : from, to, actions, mood, inner, '
             'expected, noticed, body, memory'
         )
-        return f"Tu es ce personnage :\n{fiche}\n\n{interlocutor}\n\n{schema}"
+        return f"Tu es ce personnage :\n{fiche}\n\n{interlocutor}\n\n{memory_hint}\n\n{schema}"
+
+    def _get_mcp_tools(self) -> list[dict]:
+        """Retourne les tool definitions (format provider-agnostic) pour les commandes mcp=True."""
+        return [
+            {
+                "name": cmd.code,
+                "description": cmd.mcp_description or cmd.description,
+                "parameters": cmd.mcp_params or {"type": "object", "properties": {}},
+            }
+            for bus in default_registry().all().values()
+            for cmd in bus.list()
+            if cmd.mcp
+        ]
+
+    def _make_tool_executor(self, from_char: str) -> ToolExecutor:
+        """Retourne un exécuteur de tools avec from_char injecté."""
+        def execute(name: str, args: dict) -> str:
+            if name == "recall":
+                from simphonia.services import character_service
+                about_raw = args.get("about", "").strip()
+                about_slug = character_service.get().get_identifier(about_raw) or about_raw.lower()
+                context = args.get("context", "").strip()
+                memories = memory_service.get().recall(
+                    from_char=from_char,
+                    context=context,
+                    about=about_slug or None,
+                )
+                if not memories:
+                    return f"Je n'ai aucun souvenir de {about_raw or 'cette personne'}."
+                lines = [f"# Vos souvenirs à propos de {about_raw}"]
+                for m in memories:
+                    lines.append(f"- {m['value']}")
+                return "\n".join(lines)
+            return f"Outil inconnu : {name}"
+        return execute
 
     def _build_messages(self, history: list[DialogueMessage], to_speaker: str) -> list[dict]:
         messages = []
@@ -107,8 +147,10 @@ class DefaultChatService(ChatService):
         except Exception as exc:
             self._log.warning("[sse] publish échoué : %s", exc)
 
-    def _call_llm(self, system_prompt: str, messages: list[dict]) -> str:
-        reply_text, stats = self._provider.call(system_prompt, messages)
+    def _call_llm(self, system_prompt: str, messages: list[dict], from_char: str | None = None) -> str:
+        tools = self._get_mcp_tools() if from_char else None
+        executor = self._make_tool_executor(from_char) if from_char else None
+        reply_text, stats = self._provider.call(system_prompt, messages, tools=tools, tool_executor=executor)
         if reply_text is None:
             raise LLMError("Le provider LLM n'a retourné aucune réponse")
         try:
@@ -172,7 +214,7 @@ class DefaultChatService(ChatService):
         system_prompt = self._build_system_prompt(to_card, from_char, human)
         messages = self._build_messages(state.history, to)
         try:
-            reply_text = self._call_llm(system_prompt, messages)
+            reply_text = self._call_llm(system_prompt, messages, from_char=to)
             state.history.append(DialogueMessage(
                 speaker=to,
                 content=reply_text,
@@ -225,7 +267,7 @@ class DefaultChatService(ChatService):
         system_prompt = self._build_system_prompt(to_card, from_char, human)
         messages = self._build_messages(state.history, responder)
         try:
-            reply_text = self._call_llm(system_prompt, messages)
+            reply_text = self._call_llm(system_prompt, messages, from_char=responder)
             state.history.append(DialogueMessage(
                 speaker=responder,
                 content=reply_text,
@@ -256,7 +298,7 @@ class DefaultChatService(ChatService):
             speaker_card = character_service.get().get_character(speaker)
             sp = self._build_system_prompt(speaker_card, from_char=other, human=False)
             msgs = self._build_messages(state.history, speaker)
-            speaker_say = self._call_llm(sp, msgs)
+            speaker_say = self._call_llm(sp, msgs, from_char=speaker)
         except LLMError as e:
             self._log.error("[auto_reply] LLM error générant %r : %s", speaker, e)
             return
@@ -276,7 +318,7 @@ class DefaultChatService(ChatService):
             other_card = character_service.get().get_character(other)
             sp2 = self._build_system_prompt(other_card, from_char=speaker, human=False)
             msgs2 = self._build_messages(state.history, other)
-            other_reply = self._call_llm(sp2, msgs2)
+            other_reply = self._call_llm(sp2, msgs2, from_char=other)
         except LLMError as e:
             state.history.pop()
             self._log.error("[auto_reply] LLM error répondant %r : %s", other, e)

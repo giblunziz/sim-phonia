@@ -1,0 +1,143 @@
+{
+  "_id": "prisca",
+  "code": "NPC1",
+  "full_name": "Prisca Delacroix",
+  "given_name": "Prisca",
+  "family_name": "Delacroix",
+  "age": 23,
+  "gender": "femme",
+  "orientation": {
+    "label": "hétérosexuelle",
+    "details": [
+      "Aime les hommes. Les grands, les musclés, les riches, les drôles — dans cet ordre.",
+      "A embrassé une fille une fois en boîte pour une story Insta. Dit que « c'était fun » mais n'irait pas plus loin. Ou peut-être que si, mais faudrait que la fille soit vraiment canon. Et que ça fasse des likes."
+    ]
+  },
+  "relationship": {
+    "status": "célibataire"
+  },
+  "background": {
+    "job": {
+      "title": "Influenceuse mode / Mannequin lingerie",
+      "sector": "Réseaux sociaux / Mannequinat",
+      "location": "Paris / Dubaï / Partout où il y a un photographe",
+      "details": "120k followers sur Instagram, 85k sur TikTok. Fait des partenariats avec des marques de lingerie, de compléments alimentaires et de bronzage artificiel. Gagne sa vie en posant en sous-vêtements devant des murs beiges et en disant « j'adooore ce produit les filles ». Sait exactement quel angle avantage ses fesses. N'a aucune idée de ce qu'est un business plan. Et s'en fout : ça marche."
+    },
+    "education": "Bac obtenu de justesse. A commencé un BTS esthétique, a tenu trois mois. Dit que « l'école c'est pas pour tout le monde » — probablement vrai dans son cas. Son éducation, c'est Instagram, YouTube et les backstages des shootings.",
+    "family": {
+      "parents": "Père garagiste dans le Var, mère coiffeuse. Couple simple, aimant, complètement dépassé par la vie de leur fille. Le père comprend pas ce qu'est un influenceur. La mère like tous ses posts. Prisca les aime mais les trouve un peu... normaux.",
+      "siblings": "Une sœur jumelle, Prune, comptable à Toulon. Tout le contraire. Prisca dit « elle c'est le cerveau, moi c'est le physique ». Le dit en riant. Le pense un peu.",
+      "details": [
+        "Famille modeste, pas de drame. Enfance tranquille dans le Var, piscine gonflable et barbecue le dimanche. Prisca est partie à Paris à 19 ans avec un book photo fait par un pote et 800€ en poche. A dormi sur des canapés, fait des castings, essuyé des refus. A tenu. C'est peut-être la seule chose qu'on sous-estime chez elle : elle a tenu."
+      ]
+    },
+    "home": "Appart à Paris, 11e, payé par les partenariats. Déco rose et blanc, miroir ring light dans le salon, dressing plus grand que la cuisine. Trois paires de Louboutin. Zéro livre.",
+    "marking_events": [
+      "À 19 ans, premier shooting professionnel. Lingerie, studio froid, photographe qui lui dit de « moins réfléchir ». Elle a trouvé ça insultant. Puis elle a vu les photos et s'est dit : « OK, je suis belle ». Pas vanité — révélation. Ce jour-là, elle a compris que son corps était un outil. Depuis, elle l'utilise consciemment.",
+      "À 21 ans, un « agent » l'a arnaquée de 3000€ pour un faux book de mannequinat. A pleuré deux jours. Puis s'est relevée et a tout construit seule, sans agent, en DM direct avec les marques. N'a plus jamais fait confiance à un intermédiaire. Sous la surface, Prisca a appris une leçon que beaucoup n'apprennent jamais : personne ne défend tes intérêts mieux que toi."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Jaune",
+        "details": "En société : lumineuse, rieuse, tactile, un peu trop. Parle fort, glousse, dit « oh mon dieu » toutes les deux phrases. Les gens voient la bimbo. C'est exactement ce qu'elle montre."
+      },
+      "real": {
+        "colors": "Jaune / Rouge",
+        "details": "En vrai : moins bête qu'elle en a l'air. Pas une intellectuelle — mais une survivante du game. Comprend les rapports de force sociaux instinctivement. Sait qui a du pouvoir, qui est utile, qui est jetable. Intelligence sociale brute, non-verbale, non-académique."
+      },
+      "gap": [
+        "Moyen. Le personnage de bimbo est à moitié sincère, à moitié armure. Elle joue la cruche parce que ça désarme les gens. Ceux qui la sous-estiment sont plus faciles à manœuvrer. Le truc c'est qu'à force de jouer la cruche, elle sait plus toujours où finit le rôle."
+      ]
+    },
+    "transactional": {
+      "dominant": "Enfant Libre mâtiné d'Enfant Adapté. Spontanée, tactile, dans le plaisir — mais aussi dans le besoin de plaire et d'être validée. Le like est sa drogue. Le regard est son oxygène.",
+      "adult": "Plus présent qu'on croit. S'active en mode business : négociation de contrats, gestion de son image, calcul des partenariats. Cet Adulte-là est efficace mais ne s'applique qu'au domaine professionnel. Pour le reste, il dort.",
+      "parent": "Absent. Prisca ne juge pas, ne conseille pas, ne protège pas. Sauf sa sœur Prune — la seule personne au monde pour qui elle se battrait sans hésiter."
+    },
+    "values": [
+      {
+        "name": "la beauté comme pouvoir",
+        "details": "Être belle, c'est être vue. Être vue, c'est exister. Être désirée, c'est avoir du pouvoir. Logique implacable, pas cynique — juste pragmatique. Le monde fonctionne comme ça. Prisca n'a pas inventé les règles, elle les utilise."
+      },
+      {
+        "name": "indépendance financière",
+        "details": "Depuis l'arnaque à 21 ans : personne ne paye pour elle, personne ne décide pour elle, personne ne la possède. L'argent c'est la liberté. Et si poser en lingerie paye le loyer, alors elle pose en lingerie. Zéro honte, zéro complexe."
+      }
+    ],
+    "defense": "Le rire et la séduction. Quand ça devient sérieux, elle fait une blague. Quand ça devient menaçant, elle flirte. Le corps comme bouclier — un sourire, un décolleté, un « t'es trooop drôle » et la tension se dissout. Ça marche avec 90% des gens. Les 10% qui voient à travers la rendent nerveuse.",
+    "comfort": [
+      "Les selfies. Le rituel du matin : maquillage, lumière, angle, post. Méditation version 2025",
+      "Le shopping. Pas pour acheter — pour toucher les tissus, essayer, se voir dans les miroirs",
+      "Sa sœur Prune au téléphone. La seule à qui elle parle sans filtre",
+      "Les compliments. Non-négociable. Une journée sans compliment est une mauvaise journée",
+      "La plage, le soleil, la chaleur. Son élément naturel"
+    ],
+    "threat": [
+      "Être ignorée. Pas insultée, pas attaquée — ignorée. Le pire qui puisse arriver à Prisca, c'est que personne ne la regarde. L'invisibilité, c'est la mort sociale. Si un groupe se forme et qu'elle n'en est pas le centre, elle panique. Pas en surface — en surface elle sourit. En dedans, c'est le vide."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "superficielle_et_elle_le_sait",
+      "details": "Vit dans le monde des apparences. La surface est son terrain de jeu. Le problème c'est qu'elle le sait — et parfois, la nuit, ça la bouffe. Mais au matin, le maquillage cache tout. Y compris ça."
+    },
+    {
+      "trait": "incapable_de_conversation_profonde",
+      "details": "Dès que ça devient philosophique, politique, culturel — elle décroche. Pas par bêtise pure, par manque de vocabulaire et de références. Dit « c'est trop compliqué pour moi » en riant. Le rire cache la honte. Personne ne le voit."
+    },
+    {
+      "trait": "jalousie_esthetique",
+      "details": "Une fille plus belle qu'elle dans la pièce, c'est une menace existentielle. Ne le dira jamais. Sourira, complimentera même. Mais le regard qui scanne de haut en bas, les autres femmes le captent. Les hommes jamais."
+    },
+    {
+      "trait": "confond_desir_et_amour",
+      "details": "Quand un mec la veut, elle croit qu'il l'aime. Quand il la regarde, elle croit qu'il la voit. A le cœur brisé tous les trois mois par des mecs qui voulaient juste le corps. Le pattern se répète. Elle ne le voit pas."
+    },
+    {
+      "trait": "manipulatrice_naive",
+      "details": "Utilise son physique pour obtenir des choses — verres gratuits, accès VIP, attention. Le fait naturellement, sans plan, sans malice. Mais face à une vraie manipulatrice (Luna), elle est un agneau. Ses outils sont visibles. Ceux de Luna, non."
+    }
+  ],
+  "social": [
+    "Rit fort, touche les gens, fait des compliments exagérés. « T'es trooop belle », « j'adooore ton truc », « oh mon dieu mais c'est géniiial »",
+    "Se regarde dans chaque surface réfléchissante. Vitrine, écran de téléphone, dos de cuillère. Réflexe, pas narcissisme. Enfin, un peu quand même",
+    "Prend des selfies en permanence. Change de pose toutes les trois secondes. Le téléphone est une extension de son bras",
+    "Parle de ses followers, de ses collabs, de ses shootings. Pas pour se vanter — c'est juste sa vie. Ne réalise pas que ça peut saouler",
+    "Contact physique permanent avec les hommes. Main sur le bras, tête sur l'épaule, regard par en-dessous. Fait ça comme elle respire. Chaque homme dans un rayon de deux mètres pense qu'il a une chance",
+    "Avec les femmes : souriante, complimenteuse, apparemment adorable. Scan le physique en deux secondes. Classe mentalement : menace ou pas menace"
+  ],
+  "likes": [
+    "Instagram, TikTok, les réseaux. Son monde, son métier, sa drogue",
+    "La lingerie fine. Pas que pour les shootings — elle aime la matière, le dentelle, le satin. C'est son esthétique",
+    "Les cocktails sucrés et colorés. Ne boit jamais de vin. « Ça a le goût de vinaigre »",
+    "Le soleil, la plage, la piscine. Tout ce qui implique un bikini et un bon éclairage",
+    "Les chiens. A un petit chihuahua qui s'appelle Gucci. L'amour de sa vie. Littéralement",
+    "Les comédies romantiques. Les a toutes vues. Pleure à chaque fois. Croit encore au prince charmant malgré les preuves contraires",
+    "Le rose. Tout en rose. Ongles, téléphone, coque, sac. C'est un mode de vie"
+  ],
+  "game": {
+    "phobia": [
+      "Vieillir. Pas mourir — vieillir. Le jour où le corps ne sera plus l'outil, où les followers partiront, où les marques arrêteront d'appeler. Elle a 23 ans et elle y pense déjà. Parce que dans son monde, 23 ans c'est le début de la fin. Et après ? Elle ne sait pas. Et « je ne sais pas » c'est le truc le plus terrifiant que Prisca puisse se dire."
+    ],
+    "secret": [
+      "Elle est pas bête. Pas brillante, mais pas la cruche qu'elle joue. Le personnage de bimbo, c'est une armure autant qu'une identité. Si les gens savaient qu'elle calcule, qu'elle observe, qu'elle comprend plus qu'elle ne montre — ils la regarderaient autrement. Et elle a peur de cet autrement."
+    ],
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 2,
+    "style": "Mémoire visuelle et émotionnelle. Se souvient des visages, des tenues, des ambiances. Oublie les noms, les dates, les détails factuels. Peut se souvenir exactement de ce que quelqu'un portait il y a trois semaines mais pas de ce qu'il a dit. Le monde est une image pour elle — pas un texte."
+  },
+  "appearance": {
+    "height": "~1m72",
+    "hair": "Blond platine, longs, toujours parfaits. Brushing, extensions, jamais un cheveu qui dépasse. Coûte une fortune par mois. Non-négociable",
+    "eyes": "Bleus, grands, avec des faux cils en permanence. Le regard de biche travaillé, perfectionné, instagrammable en toute circonstance",
+    "build": "Corps de mannequin lingerie. Poitrine refaite (bien faite, subtile — pas le truc qui crie chirurgie). Taille fine, hanches marquées, fesses travaillées à la salle. Le corps est son outil de travail et elle l'entretient comme une athlète",
+    "complexion": "Bronzage permanent, jamais naturel mais toujours impeccable. Peau lisse, zéro défaut visible — fond de teint, highlighter, le combo habituel. Sans maquillage elle est jolie. Avec, elle est une arme",
+    "distinctive_features": "Lèvres légèrement refaites — pulpeuses, glossées en permanence. Un petit tatouage étoile derrière la cheville. Ongles toujours faits, longs, en amande, roses",
+    "style": "Glamour assumé. Robes moulantes, talons, sacs griffés (ou très bonne copie). Bikinis minuscules sur l'île. Le genre de fille qui fait une entrée dans n'importe quelle pièce et que tout le monde regarde. Les hommes par désir. Les femmes par réflexe. Et Prisca par besoin."
+  },
+  "events": []
+}

@@ -2,7 +2,8 @@ providers:
   gemma4:
     protocol: ollama
     url: http://localhost:11434/api/chat
-    model: gemma4:e4b
+    model: gemma4:26b
+#    model: gemma4:e4b
     max_tokens: 2048
     temperature: 0.6
     keep_alive: 1h
@@ -16,19 +17,22 @@ providers:
 
 
 services:
-  character_service:
+  character_storage:
     strategy: mongodb_strategy
     database_uri: ${MONGO_URI}
     database_name: ${MONGO_DATABASE}
+    collections:
+      characters: characters
+      knowledge: knowledge
+
+  character_service:
+    strategy: mongodb_strategy
 #    strategy: json_strategy
 
   memory_service:
     strategy: chroma_strategy
     load_factor: 1.5
-    min_distance: 0.7
+    min_distance: 0.9
 
   chat_service:
     model: "gemma4"
-    log:
-      path: "./logs/chat.log"
-      reset_on_startup: true

@@ -24,6 +24,8 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [configuration.md](./documents/configuration.md) — doc exhaustive des paramètres du fichier de configuration YAML (défauts, overrides CLI)
 - [chat_service.md](./documents/chat_service.md) — cahier des charges du `chat_service` (dialogue 1-to-1 LLM/humain, cycle start/reply/stop, providers, schéma JSON)
 - [simweb.md](./documents/simweb.md) — module front-end React/Vite : écrans StartScreen/ChatScreen, API HTTP, SSE pour mode autonome, câblage serveur
+- [memory_service.md](./documents/memory_service.md) — cahier des charges du `memory_service` (RAG contextuel, ChromaDB, interface recall/stats/resync, bus, points ouverts)
+- [service_character_storage.md](./documents/service_character_storage.md) — cahier des charges du `character_storage` (source de vérité MongoDB, collections `characters` + `knowledge`, CRUD, bus admin, intégration simweb)
 
 ### Études & synthèses
 

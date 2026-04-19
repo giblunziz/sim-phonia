@@ -1,8 +1,27 @@
 import argparse
+import asyncio
 import logging
 import os
 
 import uvicorn
+
+
+async def _serve(http_port: int, character: str | None, mcp_port: int) -> None:
+    from simphonia.bootstrap import build_app
+
+    http_app = build_app()
+    configs = [uvicorn.Config(http_app, host="127.0.0.1", port=http_port, log_config=None)]
+
+    from simphonia.facade import build_mcp_app
+    mcp_app = build_mcp_app(character)
+    configs.append(uvicorn.Config(mcp_app, host="127.0.0.1", port=mcp_port, log_config=None))
+    logging.getLogger(__name__).info(
+        "MCP server : http://127.0.0.1:%d/sse%s",
+        mcp_port,
+        f" (personnage : {character})" if character else " (from_char requis dans les appels)",
+    )
+
+    await asyncio.gather(*[uvicorn.Server(c).serve() for c in configs])
 
 
 def main() -> None:
@@ -10,18 +29,23 @@ def main() -> None:
     parser.add_argument(
         "--configuration",
         metavar="PATH",
-        help=(
-            "Chemin vers un fichier de configuration YAML alternatif "
-            "(défaut : src/simphonia/simphonia.yaml)"
-        ),
+        help="Chemin vers un fichier de configuration YAML alternatif",
     )
+    parser.add_argument(
+        "--character",
+        metavar="SLUG",
+        help="Personnage actif — active le serveur MCP sur --mcp-port (ex: antoine)",
+    )
+    parser.add_argument("--port", type=int, default=8000, metavar="PORT")
+    parser.add_argument("--mcp-port", type=int, default=8001, metavar="PORT")
     args = parser.parse_args()
 
     if args.configuration:
         os.environ["SIMPHONIA_CONFIG_PATH"] = args.configuration
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-    uvicorn.run("simphonia.bootstrap:app", host="127.0.0.1", port=8000, reload=False)
+    from simphonia.logging_config import setup_logging
+    setup_logging()
+    asyncio.run(_serve(args.port, args.character, args.mcp_port))
 
 
 if __name__ == "__main__":

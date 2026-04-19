@@ -26,6 +26,13 @@ class MemoryService(ABC):
     def stats(self) -> dict:
         """Retourne un instantané de l'état du service (observabilité)."""
 
+    @abstractmethod
+    def resync(self) -> dict:
+        """Reconstruit l'index ChromaDB depuis character_storage.list_knowledge().
+
+        Retourne {"reindexed": N}.
+        """
+
 
 def build_memory_service(service_config: dict) -> MemoryService:
     """Instancie la stratégie configurée (`services.memory_service` section)."""

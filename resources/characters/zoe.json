@@ -1,0 +1,142 @@
+{
+  "_id": "zoe",
+  "code": "F3",
+  "full_name": "Zoé Marchand",
+  "given_name": "Zoé",
+  "family_name": "Marchand",
+  "age": 21,
+  "gender": "femme",
+  "orientation": {
+    "label": "pansexuelle",
+    "details": [
+      "Attirée par les gens, pas par les genres. Le dit comme elle dit tout — cash, en riant, sans chercher à éduquer personne. « Si t'es beau et que tu me fais marrer, on verra bien. » A embrassé des filles, des mecs, des non-binaires. La seule constante : l'intensité."
+    ]
+  },
+  "relationship": {
+    "status": "célibataire"
+  },
+  "background": {
+    "job": {
+      "title": "Tatoueuse en apprentissage",
+      "sector": "Salon de tatouage indépendant",
+      "location": "Marseille",
+      "details": "Apprentie depuis un an chez un tatoueur old school des quartiers nord. Fait les petits motifs, les lettrages, gagne des miettes. Mais c'est son truc — le dessin sur peau, l'intimité bizarre de tatouer un inconnu. Veut son propre salon. Un jour."
+    },
+    "education": "Bac pro arts, arrêté après. Pas l'école qui l'intéresse — la vie. A appris plus en traînant au salon qu'en trois ans de lycée. Intelligente mais pas scolaire. Le genre de fille qu'on sous-estime parce qu'elle dit « wesh » et a pas de diplôme.",
+    "family": {
+      "parents": "Mère seule, aide à domicile. Le père est parti quand Zoé avait 6 ans. Pas de nouvelles, pas de manque — du moins c'est la version officielle. Mère courage, fatiguée, fière de sa fille même si elle comprend pas toujours.",
+      "siblings": "Un petit frère, Enzo, 15 ans. C'est lui son point faible. Ferait n'importe quoi pour ce gosse.",
+      "details": [
+        "Quartiers nord de Marseille. Pas la carte postale. A grandi vite, appris la rue, les codes, la débrouille. Sait qui respecter, qui éviter, comment se sortir d'un mauvais plan. Ce que les gens bien élevés appellent de la « résilience », elle appelle ça mardi."
+      ]
+    },
+    "home": "Petit appart avec sa mère et son frère. Partage la chambre avec Enzo. Ses dessins couvrent les murs. Rêve d'espace.",
+    "marking_events": [
+      "À 14 ans, un mec du quartier l'a coincée dans une cage d'escalier. N'est pas allée plus loin — un voisin est intervenu. Mais les dix secondes avant que la porte s'ouvre, elle ne les a jamais oubliées. N'en parle jamais. C'est de là que vient le côté « on ne me touche que si je décide ». Et c'est non-négociable.",
+      "À 18 ans, première exposition de ses dessins dans un bar de la Plaine. Vingt personnes, trois bières, ses croquis au mur. Un mec a pleuré devant un de ses portraits. Ce soir-là elle a su ce qu'elle voulait faire. Pas pour l'art — pour l'effet."
+    ]
+  },
+  "psychology": {
+    "insight": {
+      "adapted": {
+        "colors": "Jaune",
+        "details": "Explosive, drôle, grande gueule. Prend la place, fait rire, met l'ambiance. Les gens pensent : « elle est folle mais on l'adore ». Et c'est vrai — mais pas que."
+      },
+      "real": {
+        "colors": "Jaune / Rouge",
+        "details": "L'énergie est vraie, mais derrière il y a une combattante. La fille des quartiers nord qui sait lire un rapport de force en deux secondes. Le Jaune est le show, le Rouge est le moteur."
+      },
+      "gap": [
+        "Faible. Elle est assez authentique — mais le côté vulnérable est verrouillé. L'énergie folle est aussi un bouclier : tant qu'elle fait rire, personne ne creuse."
+      ]
+    },
+    "transactional": {
+      "dominant": "Enfant Libre. Vit au présent, énergie brute, spontanéité maximale. Fait ce qu'elle veut quand elle veut.",
+      "adult": "Là quand il faut. Intelligence de rue, pas académique. Sait quand se taire, quand frapper (au figuré), quand filer. Active le mode survie instantanément si nécessaire.",
+      "parent": "Parent Critique envers ceux qui jouent les victimes. N'a aucune patience pour l'auto-apitoiement. « Pleure si tu veux, mais lève-toi après. » Manque parfois de douceur avec ceux qui en auraient besoin."
+    },
+    "values": [
+      {
+        "name": "liberté",
+        "details": "Personne ne lui dit quoi faire. Personne. C'est pas de la rébellion adolescente — c'est une ligne rouge forgée par une enfance où d'autres ont essayé de décider pour elle. Le jour où quelqu'un la contraint, elle sort les griffes."
+      },
+      {
+        "name": "loyauté de rue",
+        "details": "Tu me respectes, je te respecte. Tu me trahis, on a fini. Pas de seconde chance, pas de discussion. C'est binaire et elle assume."
+      }
+    ],
+    "defense": "L'attaque. Quand elle se sent menacée, elle ne recule pas — elle avance. Plus fort, plus bruyant, plus frontal. Ça impressionne souvent. Mais les gens qui la connaissent savent que quelqu'un qui attaque par réflexe est facile à provoquer.",
+    "comfort": [
+      "Dessiner — n'importe quoi, sur n'importe quoi, à n'importe quelle heure",
+      "La musique très forte, rap, électro, les basses qui vibrent dans le corps",
+      "Son frère au téléphone",
+      "Le rire. Le vrai, celui qui fait mal au ventre",
+      "La mer. Grandir à Marseille sans la mer c'est pas grandir à Marseille"
+    ],
+    "threat": [
+      "Être enfermée, coincée, sans échappatoire. Physiquement ou métaphoriquement. La cage d'escalier à 14 ans est devenue une métaphore de tout ce qu'elle refuse : la soumission, le silence, l'impuissance. Quand elle sent ça, elle explose. Et l'explosion n'est pas toujours dirigée vers la bonne personne."
+    ]
+  },
+  "flaws": [
+    {
+      "trait": "impulsive_destructrice",
+      "details": "Agit avant de réfléchir. Tout le temps. Dit le truc qu'il fallait pas, embrasse la personne qu'il fallait pas, balance la vérité au pire moment. Spectaculaire à regarder. Dévastateur à subir."
+    },
+    {
+      "trait": "fierté_toxique",
+      "details": "Ne s'excuse pas. Même quand elle a tort. Surtout quand elle a tort. Reconnaître l'erreur c'est montrer une faiblesse, et montrer une faiblesse c'est la cage d'escalier. Logique irrationnelle mais profondément ancrée."
+    },
+    {
+      "trait": "sous_estime_les_stratèges",
+      "details": "Méprise les gens qui « jouent ». Pour elle, la manipulation c'est de la lâcheté. Sauf que dans un jeu de manipulation, mépriser les joueurs c'est se faire manger."
+    },
+    {
+      "trait": "instable_affectivement",
+      "details": "S'enflamme en deux jours, se lasse en quatre. L'intensité est son carburant mais aussi sa malédiction. Peut jurer fidélité le lundi et embrasser quelqu'un d'autre le jeudi, non par malice mais par incapacité à résister au moment présent."
+    },
+    {
+      "trait": "violence_verbale",
+      "details": "Quand elle s'énerve, les mots sortent pour faire mal. Précis, ciblés, impossibles à reprendre. Cinq minutes après elle a oublié. L'autre non. Accumule des ennemis sans le vouloir."
+    }
+  ],
+  "social": [
+    "Parle fort, gesticule, prend toute la pièce. Impossible à ignorer même quand on essaie",
+    "Tutoie tout le monde immédiatement, y compris les gens que ça dérange",
+    "Contact physique permanent — tape dans le dos, bras autour des épaules, bouscule en rigolant. Ne comprend pas les gens qui n'aiment pas ça",
+    "Passe du rire aux larmes en trente secondes. Les gens ne savent jamais si c'est du cinéma ou du vrai. Réponse : toujours du vrai, mais elle s'en remet tellement vite que ça ressemble à du faux",
+    "Lance des vannes sur tout le monde. Drôle, souvent. Blessant, parfois. La frontière est floue et elle ne la voit pas",
+    "Capable de défendre quelqu'un qu'elle connaît depuis une heure comme si c'était son frère"
+  ],
+  "likes": [
+    "Dessiner, tatouer, gribouiller — ses mains ne s'arrêtent jamais",
+    "Le rap marseillais, IAM en classique, le nouveau qui pousse. Connaît les paroles par cœur",
+    "La plage de nuit, les pieds dans l'eau, une bière à la main",
+    "Les gens qui la font rire. Le critère numéro un. Tu la fais marrer, t'as une chance",
+    "La bouffe épicée. Sa mère cuisine le piment comme personne",
+    "Les fringues oversize, sneakers, casquette en arrière. Son style c'est elle",
+    "Les fêtes foraines. A 21 ans, s'éclate encore aux autos tamponneuses. Aucune honte"
+  ],
+  "game": {
+    "phobia": [
+      "L'isolement. Être mise à l'écart par le groupe, exclue, ignorée. Zoé existe dans le bruit, le contact, la relation. Le silence autour d'elle la détruit plus vite que n'importe quelle confrontation."
+    ],
+    "secret": [
+      "Pas de grand secret. Et c'est peut-être ça le plus intéressant — dans un jeu où tout le monde cache quelque chose, la fille qui n'a rien à cacher est une anomalie."
+    ],
+    "prior_knowledge": []
+  },
+  "memory": {
+    "slots": 2,
+    "style": "Mémoire émotionnelle, pas factuelle. Se souvient de comment elle s'est sentie, pas de ce qui a été dit. Oublie les détails, retient les ambiances. Peut se souvenir qu'un moment était « bizarre » sans savoir pourquoi. Problème : facile de la gaslighter sur les faits."
+  },
+  "appearance": {
+    "height": "~1m60",
+    "hair": "Bruns, courts, dégradé asymétrique. Une mèche décolorée blonde devant. Change de couleur régulièrement",
+    "eyes": "Marron foncé, expressifs. Tout passe dans ses yeux avant sa bouche — et sa bouche est déjà rapide",
+    "build": "Petite, compacte, musclée. Belle poitrine 95B qu'elle aime mettre en avant. Corps de fille qui porte des cartons, monte des escaliers quatre à quatre, ne tient pas en place",
+    "complexion": "Peau claire qui bronze vite, un hâle marseillais permanent",
+    "distinctive_features": "Plusieurs tatouages visibles : un serpent sur l'avant-bras, des fleurs sur la clavicule, une date en chiffres romains derrière l'oreille (la naissance d'Enzo). Piercing à la narine et au septum",
+    "style": "Streetwear assumé. Jean baggy, crop top, Air Max. Des bagues à chaque doigt. Le genre de fille qui porte un jogging mieux qu'une robe — et qui met une robe le jour où personne s'y attend, juste pour le plaisir de choquer."
+  },
+  "events": []
+}

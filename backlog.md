@@ -19,14 +19,14 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 | **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
 | **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
 | **#13** | Validation startup | Cascade orpheline → fail | `mcp=True` sans `from_char` → fail |
-| **#14** | Façade MCP | Second serveur sur `MCP_PORT` (SDK officiel `mcp`), tools générés depuis registry, `from_char` injecté, sortie markdown |
+| ~~#14~~ | ~~Façade MCP~~ | ✅ livré 2026-04-19 (voir `DONE`) |
 | **#15** | Smoke test E2E | Mock `memory/recall` + cascade `decay/after_recall`, validation via simcli + via client MCP |
 
-**Prochaine étape : #12** (`Bus.dispatch` refactor — pipeline `before* → call → after*`, injection `from_char`, gestion d'erreurs spécifiée).
+**Prochaine étape : #11** (`@cascade` + `ShortCircuit` — prérequis pour #12/#13/#15).
 
-**Hors scope de ce bloc** : moteur de tour joueur, vrai memory_service / knowledge_service (port Symphonie ultérieur), authentification MCP.
+**Hors scope de ce bloc** : moteur de tour joueur, authentification MCP.
 
-**Dépendance nouvelle prévue** : `mcp` (SDK officiel Anthropic) à ajouter dans `pyproject.toml` + `requirements.txt` à l'étape #14.
+**Dépendance ajoutée** : `mcp>=1.0` dans `pyproject.toml` + `requirements.txt` (livré avec #14).
 
 ---
 
@@ -115,13 +115,59 @@ Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle,
 
 ## COLD
 
-_(vide)_
 
 ## FROZEN
 
 _(vide)_
 
 ## DONE
+
+### 2026-04-19 — `character_storage` + refactor + `memory/resync` + simweb Storage
+
+- **`services/character_storage/`** : ABC `CharacterStorageService` + factory + singleton. Stratégie `mongodb_strategy` (CRUD `characters` + `knowledge`, sérialisation `ObjectId → str`, `datetime → ISO-8601`).
+- **`commands/character_storage.py`** : 9 commandes sur le bus `character_storage` (`characters.list/get/put/delete`, `knowledge.list/get/push/update/delete`). Pas de MCP.
+- **`character_service.mongodb_strategy`** refactoré : délègue à `character_storage`, plus de `MongoClient` direct. `database_uri`/`database_name` supprimés de `services.character_service` dans le YAML.
+- **`memory/resync`** : reconstruit ChromaDB depuis `character_storage.list_knowledge()`, batch 100. Fix bug décorateurs empilés (`@command recall` + `@command resync` sur `resync_command`).
+- **`bootstrap.py`** : `character_storage.init()` en premier, MongoDB désormais obligatoire.
+- **simweb — Storage > Personnages** : grille CRUD, schéma vide complet à la création, JSON brut. Appel `character/reset` après put/delete pour synchroniser le cache `character_service`.
+- **simweb — Storage > Knowledge** : grille colonnes (sans `_id`), filtres from/about en dropdowns, CRUD, formulaire avec `CategoryCombo` (select raccourci + input libre toujours visible).
+- **simweb — Memory** : bouton Resync Chroma avec confirmation.
+- **`documents/service_character_storage.md`** créé + indexé dans `CLAUDE.md`.
+- Validation utilisateur : OK 2026-04-19.
+
+### 2026-04-19 — simweb : sidebar collapsible + section Administration
+
+- **Layout** : `Layout.jsx` + `Sidebar.jsx` — sidebar collapsible (210 px ↔ 38 px, transition CSS), accordéon 2 sections (*Chat* / *Administration*) avec état expand/collapse indépendant par section. `simcli` abandonné comme outil de pilotage quotidien au profit du front web.
+- **ServerPanel** : ping serveur + chargement dynamique de toutes les commandes bus (`GET /bus` + `GET /bus/{name}/commands`).
+- **CharactersPanel** : grille de chips personnages, clic → fiche JSON via `character/get`, bouton Recharger (`character/reset`).
+- **MemoryPanel** : formulaire recall (`from_char`, `about` optionnel, `context`) → cartes résultats avec tags `about` / `category` / scène et pourcentage de pertinence `(1 − distance) × 100`.
+- **`api/simphonia.js`** enrichi : `ping`, `getAllCommands`, `getCharacter`, `resetCharacters`, `memoryRecall`.
+- **`index.css`** : styles sidebar, accordéon, bouton secondaire, panneaux admin, cartes mémoire.
+- Validation utilisateur : OK 2026-04-19.
+
+### 2026-04-19 — Logging par service + fix uvicorn + `get_identifier` fuzzy
+
+- `src/simphonia/logging.yaml` : configuration par service — handlers fichier dédiés (`file_chat`, `file_memory`, `file_character`, `file_mcp`, `file_providers`, `file_chromadb`), tous en `mode: w` (reset au boot). Loggers isolés (`propagate: false`) dirigés vers console + fichier ou fichier seul (chromadb).
+- `src/simphonia/logging_config.py` : `setup_logging()` — charge `logging.yaml`, corrige les chemins vers `PROJECT_ROOT/logs/`, crée le dossier `logs/`, appelle `logging.config.dictConfig()`. Appelé dans `main()` avant `asyncio.run()`.
+- `__main__.py` : fix `log_level="info"` → `log_config=None` dans les deux `uvicorn.Config` pour empêcher uvicorn d'écraser le logging custom.
+- `character_service/__init__.py` : `_normalize(s)` (NFD + strip Mn) + `_resolve_identifier(name, cache)` (3 niveaux : exact → token → partiel, min 3 chars). Méthode abstraite `get_identifier(name) -> str | None` ajoutée à `CharacterService`.
+- `json_strategy.py` + `mongodb_strategy.py` : implémentent `get_identifier` via `_resolve_identifier`.
+- `facade/server.py` : utilise `character_service.get().get_identifier()` pour normaliser `from_char` et `about` avant l'appel recall.
+- Validation utilisateur : OK 2026-04-19.
+
+### 2026-04-19 — Façade MCP + tool use `memory.recall` dans `chat_service`
+
+- `src/simphonia/facade/` : serveur MCP SSE (SDK `mcp` 1.x) exposant les `@command(mcp=True)` comme tools. Démarre toujours sur `MCP_PORT` (défaut 8001) — `--character <slug>` injecte `from_char` (caché du LLM) ; sans flag, `from_char` est ajouté au schema comme paramètre requis.
+- `commands/memory.py` : `mcp=True` sur `recall` avec `mcp_description` + `mcp_params` JSONSchema complet (`about`, `context`).
+- `providers/base.py` : `ToolExecutor` type alias + params optionnels `tools` / `tool_executor` dans `call()`.
+- `providers/anthropic.py` : boucle tool-use (max 5 iter) — detect `tool_use` blocks → exécute → injecte `tool_result` → relance. Throttle et retry 429/529 préservés.
+- `providers/ollama.py` : boucle tool-use (max 5 iter) — detect `tool_calls` → exécute → message `role:tool` → relance.
+- `chat_service/default_strategy.py` : `_get_mcp_tools()` + `_make_tool_executor(from_char)` + `_call_llm(..., from_char=<speaker>)` — tool use câblé sur `start`, `reply`, `auto_reply`. System prompt mis à jour avec hint `recall`.
+- `__main__.py` : deux serveurs (HTTP 8000 + MCP 8001) démarrés via `asyncio.gather`, `--character` optionnel, `--port` / `--mcp-port` configurables.
+- Bug fix : filtre `min_distance` inversé dans `chroma_strategy` (`>` au lieu de `<`).
+- `documents/memory_service.md` : créé — rétro-doc complète + sections façade MCP et intégration chat_service.
+- `pyproject.toml` + `requirements.txt` : `mcp>=1.0` ajouté.
+- Validation : Aurore consulte ses souvenirs sur Élise via `recall` (Gemma4, tool use déclenché autonomement) avant de répondre à Antoine — réponse contextuelle validée.
 
 ### 2026-04-18 — Module `simweb` (front-end React, interface de chat)
 
