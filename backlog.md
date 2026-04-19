@@ -5,35 +5,6 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
-### D1 — Dashboard MJ (révision complète)
-
-Spec validée le 2026-04-19. Remplace le Dashboard MJ v1 livré le même jour.
-
-**Écran Storage > Instances** :
-- Ajouter un bouton ▶ Lancer par ligne d'instance (déplace le lancement depuis le Dashboard vers cet écran).
-
-**Écran Dashboard MJ** :
-- Liste de tous les documents `activity_runs` (MongoDB), tri par défaut `ts_updated: -1`.
-- Colonnes : `_id`, `activity`, `state`, `scene`, `ts_updated`, `current_round`, `max_round`.
-- Colonne actions :
-  - `state != ended` → bouton ▶ (reprise) + bouton 🗑
-  - `state == ended` → bouton 🗑 uniquement
-- **Reprise** : reconstruire le `SessionState` complet depuis le document `activity_runs` (pas repartir de `activity_instances`), puis afficher le panneau de pilotage MJ (historique exchanges, give_turn, next_round, end).
-- **Delete** — double confirmation :
-  1. "Supprimer ce run ?"
-  2. "Supprimer également les knowledge associés à cette activité ?" (oui / non)
-     - Si oui → `DELETE /bus/character_storage/dispatch` — supprime tous les `knowledge` dont `activity == run._id`
-     - Dans tous les cas → supprime le document `activity_runs`
-
-**Panneau de pilotage MJ** (inchangé fonctionnellement) : rounds, instruction textarea, boutons give_turn par joueur, historique exchanges (ExchangeCard / SkippedCard). Accessible via ▶ reprise ou après lancement depuis Instances.
-
-**Backend** :
-- Nouvelle commande `activity_storage/runs.list` avec filtre + tri (ou adapter l'existante).
-- Nouvelle commande `activity/resume(run_id)` — rebuild `SessionState` depuis `activity_runs`.
-- `character_storage/knowledge.delete_by_activity(activity_id)` ou filtre sur `knowledge.delete`.
-
----
-
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
 **Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
@@ -158,6 +129,18 @@ Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis pour `sha
 _(vide)_
 
 ## DONE
+
+### 2026-04-19 — Dashboard MJ v2 (révision complète)
+
+- **Storage > Instances** : bouton ▶ Lancer par ligne → `activityRun` + navigation vers Dashboard.
+- **Dashboard MJ** : liste `activity_runs` (agrégation MongoDB, tri `ts_updated: -1`), colonnes `_id / activity / state / échanges / scene / ts_updated / current_round / max_round / actions`. Colonne échanges calculée via `$addFields { exchange_count: $size $exchanges }`. Scroll via `main-content { overflow-y: auto }`.
+- **Reprise** : `activity/resume(run_id)` reconstruit `SessionState` complet depuis MongoDB (exchange_history pré-peuplé), nouveau `session_id` UUID, même `run_id`.
+- **Delete** : double confirmation — suppression optionnelle des `knowledge` liés (`character_storage/knowledge.delete_by_activity`), puis suppression du run.
+- **Backend** : `CharacterStorageService.delete_knowledge_by_activity` (ABC + MongoDB), commande bus `knowledge.delete_by_activity`.
+- **Layout scroll** : `main-content { overflow-y: auto }` — admin panels scrollent via le conteneur parent ; mj-dashboard (`overflow: hidden`) gère son propre scroll interne.
+- Validation utilisateur : OK 2026-04-19.
+
+---
 
 ### 2026-04-19 — `activity_engine` + `activity_runs` + Dashboard MJ v1
 
