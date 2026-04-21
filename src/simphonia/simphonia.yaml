@@ -2,10 +2,11 @@ providers:
   gemma4:
     protocol: ollama
     url: http://localhost:11434/api/chat
-    model: gemma4:26b
+    model: simphonia.v1:latest
+#    model: gemma4:26b
 #    model: gemma4:e4b
-    max_tokens: 2048
-    temperature: 0.6
+    max_tokens: 4096
+    temperature: 0.8
     keep_alive: 1h
   opus:
     protocol: anthropic
@@ -42,8 +43,9 @@ services:
 
   memory_service:
     strategy: chroma_strategy
-    load_factor: 1.5
-    min_distance: 0.9
+    load_factor: 5
+    min_distance: 1.2
+    dedup_threshold: 0.2   # cosine distance ; <0.2 = doublon sémantique pour memorize
 
   chat_service:
     model: "gemma4"

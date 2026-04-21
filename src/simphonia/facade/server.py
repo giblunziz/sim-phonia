@@ -127,6 +127,22 @@ def _build_mcp_server(
             )
             return [types.TextContent(type="text", text=_format_memories(about_raw or "cette personne", memories))]
 
+        # Cas spécial : tool `memorize` (player) — formatage markdown de confirmation.
+        if cmd.code == "memorize" and role == "player":
+            from simphonia.commands.memory import format_memorize_markdown
+            from simphonia.services import memory_service
+            raw_from       = effective_from_char or arguments.get("from_char", "").strip()
+            effective_slug = raw_from.lower()
+            notes          = arguments.get("notes") or []
+
+            log.info("MCP memorize : from=%s notes=%d", effective_slug, len(notes))
+            # Pas de contexte activity/scene côté façade MCP (usage externe : ollmcp etc).
+            # Les tool_executors internes (chat/activity) passeront ces champs.
+            result = memory_service.get().memorize(
+                from_char=effective_slug, notes=notes, activity="", scene="",
+            )
+            return [types.TextContent(type="text", text=format_memorize_markdown(result))]
+
         # Cas générique : dispatch via le bus, sérialisation JSON du résultat.
         # Pour role="player" avec from_char injecté, on l'ajoute aux args si la commande
         # en a besoin (convention `from_char` — cf. futur `memory/memorize`).

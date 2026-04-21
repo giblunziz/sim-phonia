@@ -21,6 +21,9 @@ log = logging.getLogger("simphonia.mj.human")
 
 class HumanMJ(MJService):
 
+    def on_session_start(self, session: "SessionState") -> None:
+        log.info("[human] session_start session=%s — dashboard pilote", session.session_id)
+
     def on_turn_complete(self, session: "SessionState", exchange: dict) -> None:
         log.info("[human] turn_complete session=%s speaker=%s round=%d",
                  session.session_id, exchange.get("from"), exchange.get("round"))

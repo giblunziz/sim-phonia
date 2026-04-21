@@ -23,6 +23,39 @@ class MemoryService(ABC):
         """Retourne les souvenirs pertinents d'un personnage pour un contexte donné."""
 
     @abstractmethod
+    def memorize(
+        self,
+        from_char: str,
+        notes: list[dict],
+        activity: str = "",
+        scene: str = "",
+    ) -> dict:
+        """Enregistre une ou plusieurs nouvelles convictions du personnage.
+
+        Push live MongoDB + ChromaDB. Dédup sémantique (cosine `where=
+        (from, about, category)`, seuil `dedup_threshold`) — les notes proches
+        d'une existante sont skippées et reportées dans le retour.
+
+        `notes` est une liste de dicts `{about, category, value}` :
+          - `about`    : slug de personnage (résolu via fuzzy match), `from_char`
+                         ou `"self"` autorisés pour l'introspection
+          - `category` : un parmi `perceived_traits | assumptions | approach | watchouts`
+          - `value`    : texte de la conviction (formulation à la 1re personne)
+
+        `activity` et `scene` sont injectés par le tool_executor depuis la session
+        en cours — ils tracent l'origine du souvenir dans les metadatas Chroma.
+
+        Retourne :
+          ```
+          {
+            "added":   int,    # notes effectivement insérées
+            "skipped": int,    # notes skippées par dédup
+            "details": [{about, category, status, reason?, distance?}, ...],
+          }
+          ```
+        """
+
+    @abstractmethod
     def stats(self) -> dict:
         """Retourne un instantané de l'état du service (observabilité)."""
 
@@ -43,9 +76,14 @@ def build_memory_service(service_config: dict) -> MemoryService:
             ChromaMemoryService,
         )
 
-        load_factor = float(service_config.get("load_factor", 1.0))
-        min_distance = float(service_config.get("min_distance", 1.0))
-        return ChromaMemoryService(load_factor=load_factor, min_distance=min_distance)
+        load_factor     = float(service_config.get("load_factor", 1.0))
+        min_distance    = float(service_config.get("min_distance", 1.0))
+        dedup_threshold = float(service_config.get("dedup_threshold", 0.2))
+        return ChromaMemoryService(
+            load_factor=load_factor,
+            min_distance=min_distance,
+            dedup_threshold=dedup_threshold,
+        )
 
     raise ValueError(f"Unknown memory_service strategy: {strategy!r}")
 

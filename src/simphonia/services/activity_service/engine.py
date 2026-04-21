@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from enum import StrEnum
 
 from simphonia.core.errors import InstanceNotFound, SessionNotFound
+from simphonia.core.mcp import mcp_tool_hints
 from simphonia.services.activity_service.context_builder import (
     PRIVATE_FIELDS,
     PUBLIC_FIELDS,
@@ -22,7 +23,7 @@ from simphonia.utils.parser import parse_llm_json
 
 log = logging.getLogger("simphonia.activity.engine")
 
-MAX_RETRIES = 3
+MAX_RETRIES = 6
 
 
 class RunState(StrEnum):
@@ -60,6 +61,10 @@ class SessionState:
     state:            RunState = RunState.RUNNING
     exchange_history: list[dict] = field(default_factory=list)
     retry_counts:     dict[tuple, int] = field(default_factory=dict)
+    # Trace par speaker des markdowns de confirmation `memorize` — ré-injectée
+    # par `context_builder.build_messages` à chaque give_turn pour que le LLM
+    # reste conscient de ce qu'il a récemment ancré en mémoire (cohérence narrative).
+    memorize_log:     dict[str, list[str]] = field(default_factory=dict)
 
 
 _sessions: dict[str, SessionState] = {}
@@ -102,13 +107,21 @@ def _resolve_whisper(instance: dict, round_num: int, target: str, position: int)
     return None
 
 
-def _make_tool_executor(from_char: str):
+def _make_tool_executor(from_char: str, session: SessionState):
+    """Executor des tools joueurs pour un tour d'activité.
+
+    Tools supportés :
+      - `recall`    : fallback markdown specific (cf. façade)
+      - `memorize`  : dispatch vers memory_service.memorize + append markdown
+                      dans `session.memorize_log[from_char]` (cohérence narrative
+                      — voir `documents/memory_service.md` §Persistance contexte).
+    """
     def execute(name: str, args: dict) -> str:
         if name == "recall":
             from simphonia.services import character_service, memory_service
-            about_raw = args.get("about", "").strip()
+            about_raw  = args.get("about", "").strip()
             about_slug = character_service.get().get_identifier(about_raw) or about_raw.lower()
-            context = args.get("context", "").strip()
+            context    = args.get("context", "").strip()
             memories = memory_service.get().recall(
                 from_char=from_char,
                 context=context,
@@ -120,6 +133,23 @@ def _make_tool_executor(from_char: str):
             for m in memories:
                 lines.append(f"- {m.get('value', '')}")
             return "\n".join(lines)
+
+        if name == "memorize":
+            from simphonia.commands.memory import format_memorize_markdown
+            from simphonia.services import memory_service
+            notes         = args.get("notes") or []
+            activity_slug = session.instance.get("activity") or ""
+            scene_slug    = session.instance.get("scene") or ""
+            result  = memory_service.get().memorize(
+                from_char=from_char, notes=notes,
+                activity=activity_slug, scene=scene_slug,
+            )
+            markdown = format_memorize_markdown(result)
+            # Persistance contexte : garde la confirmation pour ré-injection
+            # dans le prompt à chaque give_turn (cf. build_messages).
+            session.memorize_log.setdefault(from_char, []).append(markdown)
+            return markdown
+
         return f"Outil inconnu : {name}"
     return execute
 
@@ -138,6 +168,16 @@ def _publish_sse(session_id: str, event: dict) -> None:
         sse.publish(session_id, event)
     except Exception as exc:
         log.warning("[sse] publish échoué : %s", exc)
+
+
+def _notify_mj_session_start(session: SessionState) -> None:
+    """Best-effort — un hook MJ qui plante ne doit pas bloquer le flux du run."""
+    if session.mj_service is None:
+        return
+    try:
+        session.mj_service.on_session_start(session)
+    except Exception as exc:
+        log.warning("[mj] on_session_start a échoué : %s", exc, exc_info=True)
 
 
 def _notify_mj_turn_complete(session: SessionState, exchange: dict) -> None:
@@ -224,11 +264,18 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
             "ts":          _now_iso(),
         })
 
+    # Hints narratifs composés depuis les @command(mcp=True, mcp_role="player", mcp_hint=...)
+    # et les `register_mcp_group(bus, "player", intro, outro)` des modules commands/*.
+    memory_hint   = mcp_tool_hints(role="player")
     system_prompt = build_system_prompt(
         slug, session.instance, session.activity, session.scene,
         character, knowledge_entries,
         system_schemas=session.system_schemas,
     )
+    if memory_hint:
+        system_prompt = f"{memory_hint}\n\n{system_prompt}"
+
+
     # log.info("[give_turn] system_prompt %r:\n%s", slug, system_prompt)
 
     messages = build_messages(
@@ -237,6 +284,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
         whisper=whisper,
         mj_instruction=mj_instruction,
         amorce=None,
+        memorize_log=session.memorize_log.get(slug),
     )
     has_schema = bool(session.system_schemas)
     if not messages:
@@ -247,7 +295,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
 
     tools    = get_tools(session.activity)
     provider = provider_registry.get(session.provider_name)
-    executor = _make_tool_executor(slug)
+    executor = _make_tool_executor(slug, session)
 
     # Circuit breaker
     while True:
@@ -267,8 +315,6 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
         except Exception as exc:
             log.warning("[give_turn] provider error pour %r : %s", slug, exc)
 
-        log.info("[give_turn] raw %r:\n%s", slug, raw_response or "<vide>")
-
         if parsed is not None:
             break
 
@@ -277,6 +323,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
         log.warning("[give_turn] parse KO pour %r (%d/%d)", slug, attempts, MAX_RETRIES)
         if attempts >= MAX_RETRIES:
             log.error("[give_turn] skip %r après %d tentatives", slug, MAX_RETRIES)
+            session.retry_counts[retry_key] = 0
             _publish_sse(session_id, {
                 "type":       "activity.turn_skipped",
                 "session_id": session_id,
@@ -415,6 +462,9 @@ def run(instance_id: str) -> dict:
     _publish_sse(session_id, {"type": "activity.started", **payload})
     log.info("[run] session=%s instance=%r players=%s mj_mode=%s",
              session_id, instance_id, players, mj_mode)
+
+    # Hook MJ : en mode autonomous, déclenche le briefing + premier give_turn
+    _notify_mj_session_start(session)
     return payload
 
 
@@ -516,6 +566,9 @@ def resume(run_id: str) -> dict:
     }
     _publish_sse(session_id, {"type": "activity.resumed", **payload})
     log.info("[resume] session=%s run=%r players=%s round=%d", session_id, run_id, players, current_round)
+
+    # Hook MJ : en mode autonomous, reconstruit son contexte et reprend la boucle
+    _notify_mj_session_start(session)
     return payload
 
 

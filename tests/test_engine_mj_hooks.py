@@ -1,6 +1,7 @@
 """Tests unitaires — hooks MJ dans `activity_service.engine`.
 
-Vérifie que `_notify_mj_turn_complete` et `_notify_mj_session_end` :
+Vérifie que `_notify_mj_session_start`, `_notify_mj_turn_complete` et
+`_notify_mj_session_end` :
   - No-op quand `session.mj_service is None`
   - Appellent la bonne méthode sinon
   - Best-effort : une exception dans le hook est attrapée (ne bloque pas le flux)
@@ -14,6 +15,7 @@ import pytest
 
 from simphonia.services.activity_service.engine import (
     _notify_mj_session_end,
+    _notify_mj_session_start,
     _notify_mj_turn_complete,
 )
 from simphonia.services.mj_service import MJService
@@ -33,6 +35,9 @@ class RecordingMJ(MJService):
     def __init__(self) -> None:
         self.calls: list[tuple[str, Any]] = []
 
+    def on_session_start(self, session):
+        self.calls.append(("on_session_start", None))
+
     def on_turn_complete(self, session, exchange):
         self.calls.append(("on_turn_complete", exchange))
 
@@ -47,6 +52,9 @@ class RecordingMJ(MJService):
 class FailingMJ(MJService):
     """Stratégie qui plante à chaque appel — sert à vérifier le best-effort."""
 
+    def on_session_start(self, session):
+        raise RuntimeError("boom session_start")
+
     def on_turn_complete(self, session, exchange):
         raise RuntimeError("boom turn_complete")
 
@@ -55,6 +63,29 @@ class FailingMJ(MJService):
 
     def on_session_end(self, session):
         raise RuntimeError("boom session_end")
+
+
+# ---------------------------------------------------------------------------
+#  _notify_mj_session_start
+# ---------------------------------------------------------------------------
+
+class TestNotifySessionStart:
+
+    def test_noop_when_service_is_none(self):
+        session = FakeSession(mj_service=None)
+        _notify_mj_session_start(session)
+
+    def test_calls_on_session_start(self):
+        mj = RecordingMJ()
+        session = FakeSession(mj_service=mj)
+        _notify_mj_session_start(session)
+        assert len(mj.calls) == 1
+        assert mj.calls[0][0] == "on_session_start"
+
+    def test_swallows_exceptions(self, caplog):
+        session = FakeSession(mj_service=FailingMJ())
+        _notify_mj_session_start(session)
+        assert any("on_session_start a échoué" in r.message for r in caplog.records)
 
 
 # ---------------------------------------------------------------------------

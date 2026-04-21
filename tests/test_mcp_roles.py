@@ -45,7 +45,7 @@ class TestCommandDataclass:
         assert cmd.mcp_role == "mj"
 
     def test_mcp_roles_frozen_set(self):
-        assert MCP_ROLES == frozenset({"player", "mj"})
+        assert MCP_ROLES == frozenset({"player", "mj", "npc"})
 
 
 # ---------------------------------------------------------------------------

@@ -256,6 +256,7 @@ export default function StorageInstancesPanel({ onLaunch }) {
   const [busy, setBusy]           = useState({});
   const [msg, setMsg]             = useState(null);
   const [error, setError]         = useState(null);
+  const [slugError, setSlugError] = useState(false);
 
   const load = useCallback(async () => {
     try { setEntries(await instanceList() ?? []); }
@@ -279,13 +280,26 @@ export default function StorageInstancesPanel({ onLaunch }) {
       starter: next.includes(p.starter) ? p.starter : '',
     }));
 
-  const openCreate = () => { setForm(EMPTY_FORM); setEditId(null); setError(null); setShowForm(true); };
-  const openEdit   = (e)  => { setForm(entryToForm(e)); setEditId(e._id); setError(null); setShowForm(true); };
+  const openCreate    = () => { setForm(EMPTY_FORM); setEditId(null); setError(null); setSlugError(false); setShowForm(true); };
+  const openEdit      = (e)  => { setForm(entryToForm(e)); setEditId(e._id); setError(null); setSlugError(false); setShowForm(true); };
+  const openDuplicate = (e)  => {
+    // Deep-copy via entryToForm puis reset du slug — l'utilisateur saisit un nouvel identifiant
+    setForm({ ...entryToForm(e), slug: '' });
+    setEditId(null);          // mode création (nouveau document Mongo)
+    setError(null);
+    setSlugError(false);
+    setShowForm(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const id = editId ?? form.slug.trim();
-    if (!id) { setError('Le slug est obligatoire.'); return; }
+    if (!id) {
+      setError('Le slug est obligatoire.');
+      setSlugError(true);
+      return;
+    }
+    setSlugError(false);
     setBusy((b) => ({ ...b, save: true }));
     setError(null);
     try {
@@ -343,10 +357,25 @@ export default function StorageInstancesPanel({ onLaunch }) {
             {/* slug */}
             {!editId && (
               <div className="field">
-                <label htmlFor="ins-slug">Slug <span className="label-opt">(identifiant unique)</span></label>
-                <input id="ins-slug" type="text" placeholder="ex: action_verite_20260419"
-                  value={form.slug} onChange={(e) => set('slug', e.target.value)}
-                  disabled={busy.save} style={{ width: '100%' }} />
+                <label htmlFor="ins-slug">
+                  Slug <span className="label-opt">(identifiant unique, obligatoire)</span>
+                  {slugError && <span style={{ color: 'var(--danger)', marginLeft: '0.5rem', fontSize: '0.78rem' }}>⚠ requis</span>}
+                </label>
+                <input
+                  id="ins-slug"
+                  type="text"
+                  required
+                  aria-invalid={slugError || undefined}
+                  placeholder="ex: action_verite_20260420"
+                  value={form.slug}
+                  onChange={(e) => { set('slug', e.target.value); if (slugError && e.target.value.trim()) setSlugError(false); }}
+                  disabled={busy.save}
+                  style={{
+                    width: '100%',
+                    borderColor: slugError ? 'var(--danger)' : undefined,
+                    outlineColor: slugError ? 'var(--danger)' : undefined,
+                  }}
+                />
               </div>
             )}
 
@@ -489,7 +518,8 @@ export default function StorageInstancesPanel({ onLaunch }) {
                   <span className="kc-dim">{(e.players ?? []).length} joueur(s)</span>
                   <span className="kc-dim">{formatTs(e.ts_updated)}</span>
                   <span className="kc-actions">
-                    <button className="btn-row" onClick={() => openEdit(e)}>✎</button>
+                    <button className="btn-row" title="Éditer" onClick={() => openEdit(e)}>✎</button>
+                    <button className="btn-row" title="Dupliquer (slug à saisir)" onClick={() => openDuplicate(e)}>⎘</button>
                     <button
                       className="btn-row"
                       style={{ background: 'var(--accent)', color: '#fff', fontWeight: 600 }}
@@ -499,7 +529,7 @@ export default function StorageInstancesPanel({ onLaunch }) {
                     >
                       {busy[e._id] ? '…' : '▶'}
                     </button>
-                    <button className="btn-row btn-row-danger" onClick={() => handleDelete(e._id)}>✕</button>
+                    <button className="btn-row btn-row-danger" title="Supprimer" onClick={() => handleDelete(e._id)}>✕</button>
                   </span>
                 </div>
               ))}

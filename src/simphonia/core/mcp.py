@@ -6,12 +6,23 @@ dupliquer les définitions de tools.
 
 Filtrage par rôle : `role=None` (défaut) retourne **toutes** les commandes MCP
 quel que soit leur `mcp_role` — rétro-compat pour les consommateurs qui
-n'étaient pas conscients de l'attribut. `role="player"` ou `role="mj"` filtre.
+n'étaient pas conscients de l'attribut. `role="player"` / `"mj"` / `"npc"` filtre.
+
+**Groupes MCP narratifs** : chaque `(bus, role)` peut déclarer une intro/outro
+via `register_mcp_group(...)`. Le helper `mcp_tool_hints(role)` compose
+intro + hints des commandes + outro pour produire le bloc narratif injecté
+dans le system_prompt du LLM incarné.
 """
 from __future__ import annotations
 
+import logging
+from collections import defaultdict
+from dataclasses import dataclass
+
 from simphonia.core.command import Command
 from simphonia.core.registry import BusRegistry, default_registry
+
+log = logging.getLogger("simphonia.mcp")
 
 
 def list_mcp_commands(
@@ -53,3 +64,79 @@ def mcp_tool_definitions(
 ) -> list[dict]:
     """Raccourci : `list_mcp_commands(registry, role)` puis `to_tool_definitions`."""
     return to_tool_definitions(list_mcp_commands(registry, role))
+
+
+# ---------------------------------------------------------------------------
+#  Groupes MCP narratifs — intro/outro par (bus, role)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class McpGroup:
+    """Bloc narratif associé à un `(bus, role)` pour la composition du prompt."""
+    bus:   str
+    role:  str
+    intro: str = ""
+    outro: str = ""
+
+
+_mcp_groups: dict[tuple[str, str], McpGroup] = {}
+
+
+def register_mcp_group(*, bus: str, role: str, intro: str = "", outro: str = "") -> None:
+    """Enregistre l'intro/outro narrative pour le groupe `(bus, role)`.
+
+    Idempotent par design — un second appel **écrase** (avec warning log) ;
+    utile en dev/tests. Appeler en top-level dans le module `commands/<bus>.py`
+    qui héberge les commandes du groupe.
+    """
+    key = (bus, role)
+    if key in _mcp_groups:
+        log.warning("register_mcp_group: groupe %s déjà enregistré — écrasement", key)
+    _mcp_groups[key] = McpGroup(bus=bus, role=role, intro=intro, outro=outro)
+
+
+def get_mcp_group(bus: str, role: str) -> McpGroup | None:
+    """Retourne le groupe enregistré pour `(bus, role)`, ou `None`."""
+    return _mcp_groups.get((bus, role))
+
+
+def _reset_mcp_groups_for_tests() -> None:
+    """Helper de tests — reset le registre de groupes."""
+    _mcp_groups.clear()
+
+
+def mcp_tool_hints(role: str, registry: BusRegistry | None = None) -> str:
+    """Compose le bloc narratif des tools MCP pour un rôle donné.
+
+    Regroupe les commandes filtrées `role=role` par leur bus, puis pour chaque
+    groupe `(bus, role)` compose :
+        intro (si enregistrée)
+        hint1
+        hint2
+        ...
+        outro (si enregistrée)
+
+    Les groupes sont séparés visuellement par `\\n\\n---\\n\\n`. Retourne une
+    chaîne vide si aucune commande n'a de `mcp_hint` et aucun groupe pertinent.
+    """
+    commands = list_mcp_commands(registry, role)
+    by_bus: dict[str, list[Command]] = defaultdict(list)
+    for cmd in commands:
+        by_bus[cmd.bus_name].append(cmd)
+
+    sections: list[str] = []
+    for bus, cmds in by_bus.items():
+        group = get_mcp_group(bus, role)
+        hints = [c.mcp_hint for c in cmds if c.mcp_hint]
+        if not hints and not (group and (group.intro or group.outro)):
+            continue
+        parts: list[str] = []
+        if group and group.intro:
+            parts.append(group.intro)
+        parts.extend(hints)
+        if group and group.outro:
+            parts.append(group.outro)
+        if parts:
+            sections.append("\n\n".join(parts))
+
+    return "\n\n---\n\n".join(sections)

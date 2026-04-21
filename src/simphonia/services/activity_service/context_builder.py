@@ -178,6 +178,7 @@ def build_messages(
     whisper: str | None = None,
     mj_instruction: dict | None = None,
     amorce: str | None = None,
+    memorize_log: list[str] | None = None,
 ) -> list[dict]:
     """Assemble la liste de messages pour un joueur à un tour donné.
 
@@ -185,8 +186,9 @@ def build_messages(
       1. Amorce MJ (réservée au MJ, jamais aux joueurs)
       2. Événement de round (déjà résolu par le caller)
       3. Whisper (message privé)
-      4. Historique des échanges publics
-      5. Instruction MJ (déjà résolue par le caller)
+      4. Mémorisations récentes du joueur (cohérence narrative memorize)
+      5. Historique des échanges publics
+      6. Instruction MJ (déjà résolue par le caller)
     """
     messages = []
 
@@ -207,7 +209,15 @@ def build_messages(
     if whisper is not None:
         messages.append({"role": "user", "content": whisper})
 
-    # 4. Historique des échanges publics
+    # 4. Mémorisations récentes — ré-injection des confirmations `memorize` du
+    # joueur pour garantir la cohérence narrative (sinon le LLM « mémorise puis
+    # oublie au prochain give_turn »). Overlap léger accepté avec ce que `recall`
+    # peut remonter — renforce l'ancrage.
+    if memorize_log:
+        content = "## Tes mémorisations récentes\n\n" + "\n\n---\n\n".join(memorize_log)
+        messages.append({"role": "user", "content": content})
+
+    # 5. Historique des échanges publics
     for entry in exchange_history:
         from_char = entry.get("from")
         role      = "assistant" if from_char == player else "user"

@@ -24,9 +24,19 @@ log_chroma = logging.getLogger("simphonia.chromadb")
 class ChromaMemoryService(MemoryService):
     """RAG contextuel — vector store local ChromaDB."""
 
-    def __init__(self, load_factor: float = 1.0, min_distance: float = 1.0, force_cpu: bool = False) -> None:
-        self._load_factor = load_factor
-        self._min_distance = min_distance
+    # Catégories autorisées pour memorize (figées — backlog H1)
+    _ALLOWED_CATEGORIES = frozenset({"perceived_traits", "assumptions", "approach", "watchouts"})
+
+    def __init__(
+        self,
+        load_factor: float = 1.0,
+        min_distance: float = 1.0,
+        dedup_threshold: float = 0.2,
+        force_cpu: bool = False,
+    ) -> None:
+        self._load_factor     = load_factor
+        self._min_distance    = min_distance
+        self._dedup_threshold = dedup_threshold
         log.info("Initialisation ChromaMemoryService...")
 
         CHROMA_DIR.mkdir(parents=True, exist_ok=True)
@@ -151,6 +161,143 @@ class ChromaMemoryService(MemoryService):
             self._min_distance,
         )
         return memories
+
+    def memorize(
+        self,
+        from_char: str,
+        notes: list[dict],
+        activity: str = "",
+        scene: str = "",
+    ) -> dict:
+        """Push live Mongo + Chroma avec dédup sémantique.
+
+        Voir docstring de l'ABC pour le contrat. Aucune exception levée :
+        chaque note est traitée indépendamment, les erreurs et skips sont
+        reportés dans le `details`.
+        """
+        from simphonia.services import character_service, character_storage
+
+        added:   int = 0
+        skipped: int = 0
+        details: list[dict] = []
+
+        char_svc = character_service.get()
+        store    = character_storage.get()
+
+        for note in notes or []:
+            raw_about = (note.get("about") or "").strip()
+            category  = (note.get("category") or "").strip()
+            value     = (note.get("value") or "").strip()
+
+            # Validation minimale
+            if not raw_about or not category or not value:
+                details.append({
+                    "about": raw_about, "category": category,
+                    "status": "skipped", "reason": "empty_field",
+                })
+                skipped += 1
+                continue
+            if category not in self._ALLOWED_CATEGORIES:
+                details.append({
+                    "about": raw_about, "category": category,
+                    "status": "skipped", "reason": "invalid_category",
+                })
+                skipped += 1
+                continue
+
+            # Résolution about (self / from_char / autre)
+            if raw_about.lower() == "self":
+                about_slug = from_char
+            else:
+                about_slug = char_svc.get_identifier(raw_about) or raw_about.lower()
+
+            # Embed (réutilisé pour dédup query + insert)
+            embedding = self._embed(value)
+
+            # Dédup sémantique
+            if self._collection.count() > 0:
+                where = {"$and": [
+                    {"from":     from_char},
+                    {"about":    about_slug},
+                    {"category": category},
+                ]}
+                try:
+                    existing = self._collection.query(
+                        query_embeddings=[embedding],
+                        where=where,
+                        n_results=1,
+                        include=["distances"],
+                    )
+                    distances = existing.get("distances") or [[]]
+                    if distances and distances[0]:
+                        d = float(distances[0][0])
+                        if d < self._dedup_threshold:
+                            log.info(
+                                "memorize: skip semantic duplicate from=%s about=%s "
+                                "category=%s distance=%.3f value=%.60r",
+                                from_char, about_slug, category, d, value,
+                            )
+                            details.append({
+                                "about": about_slug, "category": category, "value": value,
+                                "status": "skipped", "reason": "semantic_duplicate",
+                                "distance": round(d, 4),
+                            })
+                            skipped += 1
+                            continue
+                except Exception as exc:
+                    log.warning("memorize: dedup query a échoué — insertion forcée : %s", exc)
+
+            # Insert MongoDB (source de vérité — _id et ts auto-injectés)
+            try:
+                entry_in = {
+                    "from":     from_char,
+                    "about":    about_slug,
+                    "category": category,
+                    "value":    value,
+                    "activity": activity,
+                    "scene":    scene,
+                }
+                inserted = store.push_knowledge(entry_in)
+            except Exception as exc:
+                log.warning("memorize: push_knowledge Mongo a échoué : %s", exc)
+                details.append({
+                    "about": about_slug, "category": category,
+                    "status": "error", "reason": f"mongo_push_failed: {exc}",
+                })
+                continue
+
+            # Insert ChromaDB (réutilise embedding pré-calculé)
+            try:
+                self._collection.add(
+                    ids=[str(inserted.get("_id", ""))],
+                    documents=[value],
+                    metadatas=[{
+                        "from":     from_char,
+                        "about":    about_slug,
+                        "category": category,
+                        "activity": activity,
+                        "scene":    scene,
+                        "ts":       str(inserted.get("ts", "")),
+                    }],
+                    embeddings=[embedding],
+                )
+            except Exception as exc:
+                log.warning("memorize: chroma.add a échoué (Mongo OK) : %s", exc)
+                details.append({
+                    "about": about_slug, "category": category,
+                    "status": "partial", "reason": f"chroma_add_failed: {exc}",
+                })
+                added += 1
+                continue
+
+            details.append({
+                "about": about_slug, "category": category, "value": value, "status": "added",
+            })
+            added += 1
+            log.info("memorize: from=%s about=%s category=%s value=%.60r",
+                     from_char, about_slug, category, value)
+
+        return {"added": added, "skipped": skipped, "details": details}
 
     def stats(self) -> dict:
         return {

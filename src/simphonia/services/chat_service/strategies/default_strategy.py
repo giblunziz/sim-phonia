@@ -12,7 +12,7 @@ from datetime import datetime
 
 from simphonia.core import default_registry
 from simphonia.core.errors import CharacterNotFound, InvalidParticipant, LLMError, SessionNotFound
-from simphonia.core.mcp import mcp_tool_definitions
+from simphonia.core.mcp import mcp_tool_definitions, mcp_tool_hints
 from simphonia.providers.base import LLMProvider, ToolExecutor
 from simphonia.services.chat_service import ChatService
 from simphonia.services.chat_service.types import DialogueMessage, DialogueState
@@ -49,10 +49,10 @@ class DefaultChatService(ChatService):
             if human
             else f"Tu parles avec le personnage {from_char}."
         )
-        memory_hint = (
-            "Tu as accès à l'outil `recall` pour consulter tes souvenirs sur quelqu'un avant de répondre. "
-            "Utilise-le librement si la situation le nécessite."
-        )
+        # Hints narratifs composés depuis les @command(mcp=True, mcp_role="player", mcp_hint=...)
+        # et les `register_mcp_group(bus, "player", intro, outro)` des modules commands/*.
+        memory_hint = mcp_tool_hints(role="player")
+
         schema = (
             'Ta réponse finale doit être UNIQUEMENT un objet JSON valide, sans texte avant ni après.\n'
             'Format obligatoire :\n'
@@ -73,14 +73,19 @@ class DefaultChatService(ChatService):
         """
         return mcp_tool_definitions(role="player")
 
-    def _make_tool_executor(self, from_char: str) -> ToolExecutor:
-        """Retourne un exécuteur de tools avec from_char injecté."""
+    def _make_tool_executor(self, from_char: str, state: "DialogueState | None" = None) -> ToolExecutor:
+        """Retourne un exécuteur de tools avec from_char injecté.
+
+        Si `state` est fourni, les confirmations `memorize` sont ajoutées dans
+        `state.memorize_log[from_char]` pour ré-injection dans le prompt à
+        chaque tour (cohérence narrative).
+        """
         def execute(name: str, args: dict) -> str:
             if name == "recall":
                 from simphonia.services import character_service
-                about_raw = args.get("about", "").strip()
+                about_raw  = args.get("about", "").strip()
                 about_slug = character_service.get().get_identifier(about_raw) or about_raw.lower()
-                context = args.get("context", "").strip()
+                context    = args.get("context", "").strip()
                 memories = memory_service.get().recall(
                     from_char=from_char,
                     context=context,
@@ -92,11 +97,33 @@ class DefaultChatService(ChatService):
                 for m in memories:
                     lines.append(f"- {m['value']}")
                 return "\n".join(lines)
+
+            if name == "memorize":
+                from simphonia.commands.memory import format_memorize_markdown
+                notes  = args.get("notes") or []
+                result = memory_service.get().memorize(
+                    from_char=from_char, notes=notes,
+                    activity="chat", scene="chat",
+                )
+                markdown = format_memorize_markdown(result)
+                if state is not None:
+                    state.memorize_log.setdefault(from_char, []).append(markdown)
+                return markdown
+
             return f"Outil inconnu : {name}"
         return execute
 
-    def _build_messages(self, history: list[DialogueMessage], to_speaker: str) -> list[dict]:
+    def _build_messages(
+        self,
+        history: list[DialogueMessage],
+        to_speaker: str,
+        memorize_log: list[str] | None = None,
+    ) -> list[dict]:
         messages = []
+        # Ré-injection des mémorisations récentes du speaker (cohérence narrative).
+        if memorize_log:
+            content = "## Tes mémorisations récentes\n\n" + "\n\n---\n\n".join(memorize_log)
+            messages.append({"role": "user", "content": content})
         for msg in history:
             if msg.speaker == to_speaker:
                 messages.append({"role": "assistant", "content": msg.content})
@@ -142,9 +169,15 @@ class DefaultChatService(ChatService):
         except Exception as exc:
             self._log.warning("[sse] publish échoué : %s", exc)
 
-    def _call_llm(self, system_prompt: str, messages: list[dict], from_char: str | None = None) -> str:
-        tools = self._get_mcp_tools() if from_char else None
-        executor = self._make_tool_executor(from_char) if from_char else None
+    def _call_llm(
+        self,
+        system_prompt: str,
+        messages: list[dict],
+        from_char: str | None = None,
+        state: "DialogueState | None" = None,
+    ) -> str:
+        tools    = self._get_mcp_tools() if from_char else None
+        executor = self._make_tool_executor(from_char, state) if from_char else None
         reply_text, stats = self._provider.call(system_prompt, messages, tools=tools, tool_executor=executor)
         if reply_text is None:
             raise LLMError("Le provider LLM n'a retourné aucune réponse")
@@ -207,9 +240,9 @@ class DefaultChatService(ChatService):
         # Générer la réponse de `to` via LLM (sauf si to est un humain — non géré MVP)
         to_card = character_service.get().get_character(to)
         system_prompt = self._build_system_prompt(to_card, from_char, human)
-        messages = self._build_messages(state.history, to)
+        messages = self._build_messages(state.history, to, memorize_log=state.memorize_log.get(to))
         try:
-            reply_text = self._call_llm(system_prompt, messages, from_char=to)
+            reply_text = self._call_llm(system_prompt, messages, from_char=to, state=state)
             state.history.append(DialogueMessage(
                 speaker=to,
                 content=reply_text,
@@ -260,9 +293,9 @@ class DefaultChatService(ChatService):
         responder = state.participants[1] if from_char == state.participants[0] else state.participants[0]
         to_card = character_service.get().get_character(responder)
         system_prompt = self._build_system_prompt(to_card, from_char, human)
-        messages = self._build_messages(state.history, responder)
+        messages = self._build_messages(state.history, responder, memorize_log=state.memorize_log.get(responder))
         try:
-            reply_text = self._call_llm(system_prompt, messages, from_char=responder)
+            reply_text = self._call_llm(system_prompt, messages, from_char=responder, state=state)
             state.history.append(DialogueMessage(
                 speaker=responder,
                 content=reply_text,
@@ -292,8 +325,8 @@ class DefaultChatService(ChatService):
         try:
             speaker_card = character_service.get().get_character(speaker)
             sp = self._build_system_prompt(speaker_card, from_char=other, human=False)
-            msgs = self._build_messages(state.history, speaker)
-            speaker_say = self._call_llm(sp, msgs, from_char=speaker)
+            msgs = self._build_messages(state.history, speaker, memorize_log=state.memorize_log.get(speaker))
+            speaker_say = self._call_llm(sp, msgs, from_char=speaker, state=state)
         except LLMError as e:
             self._log.error("[auto_reply] LLM error générant %r : %s", speaker, e)
             return

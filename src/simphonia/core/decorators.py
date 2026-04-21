@@ -19,6 +19,7 @@ def command(
     mcp_description: str | None = None,
     mcp_params: dict[str, Any] | None = None,
     mcp_role: str = "player",
+    mcp_hint: str | None = None,
 ) -> Callable[[F], F]:
     _validate_mcp_contract(
         bus_name=bus,
@@ -27,6 +28,7 @@ def command(
         mcp_description=mcp_description,
         mcp_params=mcp_params,
         mcp_role=mcp_role,
+        mcp_hint=mcp_hint,
     )
 
     def decorator(fn: F) -> F:
@@ -41,6 +43,7 @@ def command(
                 mcp_description=mcp_description,
                 mcp_params=mcp_params,
                 mcp_role=mcp_role,
+                mcp_hint=mcp_hint,
             )
         )
         return fn
@@ -96,6 +99,7 @@ def _validate_mcp_contract(
     mcp_description: str | None,
     mcp_params: dict[str, Any] | None,
     mcp_role: str,
+    mcp_hint: str | None,
 ) -> None:
     if not mcp:
         if mcp_description is not None or mcp_params is not None:
@@ -109,6 +113,12 @@ def _validate_mcp_contract(
                 bus_name,
                 code,
                 f"mcp_role={mcp_role!r} provided but mcp=False (contract inconsistent)",
+            )
+        if mcp_hint is not None:
+            raise CommandContractError(
+                bus_name,
+                code,
+                "mcp_hint provided but mcp=False (no system prompt injection without MCP)",
             )
         return
 

@@ -37,24 +37,18 @@ class TestBuildMjService:
         with pytest.raises(ValueError, match="Unknown mj_mode"):
             build_mj_service("foo")
 
-    def test_build_planned_modes_raise_for_now(self):
-        """Les modes planifiés (human_in_loop, autonomous) ne sont pas encore livrés.
-
-        Ils doivent lever ValueError proprement — si un jour ils sont livrés
-        (étapes #5 et #8), ce test devra basculer vers un `isinstance` check.
-        """
-        with pytest.raises(ValueError):
-            build_mj_service("human_in_loop")
-        with pytest.raises(ValueError):
-            build_mj_service("autonomous")
+    def test_build_autonomous_returns_autonomous_mj(self):
+        """Étape #8 livrée — autonomous est désormais un mode valide."""
+        from simphonia.services.mj_service.strategies.autonomous_strategy import AutonomousMJ
+        svc = build_mj_service("autonomous")
+        assert isinstance(svc, AutonomousMJ)
 
     def test_error_message_lists_valid_modes(self):
         with pytest.raises(ValueError) as exc_info:
             build_mj_service("nope")
         msg = str(exc_info.value)
-        assert "'human'" in msg  # valid v1
-        assert "human_in_loop" in msg  # planned
-        assert "autonomous" in msg     # planned
+        assert "'human'" in msg
+        assert "'autonomous'" in msg
 
 
 # ---------------------------------------------------------------------------
@@ -62,6 +56,12 @@ class TestBuildMjService:
 # ---------------------------------------------------------------------------
 
 class TestHumanMJ:
+
+    def test_on_session_start_is_noop(self):
+        svc = HumanMJ()
+        # Doit ne rien lever
+        result = svc.on_session_start(FakeSession())
+        assert result is None
 
     def test_on_turn_complete_is_noop(self):
         svc = HumanMJ()
@@ -101,6 +101,6 @@ class TestMjServiceContract:
     def test_subclass_must_implement_all_methods(self):
         class Incomplete(MJService):
             def on_turn_complete(self, session, exchange): pass
-            # manque on_next_turn et on_session_end
+            # manque on_session_start, on_next_turn, on_session_end
         with pytest.raises(TypeError):
             Incomplete()

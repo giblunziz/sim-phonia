@@ -5,27 +5,6 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
-### 🎭 MJ — `mj_service` + port Beholder autonome
-
-Spec complète dans [`documents/mj_service.md`](./documents/mj_service.md) — mini-backlog local dans la section §10 (convention TODO/WIP/DONE/BLOCKED).
-
-**Deux axes orthogonaux** :
-- `mj_mode` ∈ `human` | `autonomous`
-- `turning_mode` ∈ `starter` | `named` | `round_robin` | `next_remaining` | `random_remaining` | `random`
-
-**Architecture** :
-- Service `mj_service/` (interface + 2 stratégies `HumanMJ` / `AutonomousMJ`) — preview SSE pour le bouton Next humain, boucle LLM en autonomous
-- Helpers purs `turning_modes.py` — stratégie de sélection, zéro LLM
-- Commande `mj/next_turn` = orchestrateur générique step-by-step (bouton ▶ Next du dashboard + raccourci AutonomousMJ)
-- Façade MCP dual (`/sse` player + `/sse/mj` MJ) via nouvel attribut `mcp_role` sur `@command`
-- Port Beholder legacy sur `AutonomousMJ` — boucle tool-use, state-machine via prompting (`rules.mj`)
-
-**8 étapes séquencées** dans le doc (§10), étapes 1–5 livrables sans toucher la façade MCP ni LLM MJ. Le ticket reste HOT tant que toutes les étapes ne sont pas validées.
-
-**État courant** : #1, #2, #3, #3bis, #4, #5 ✅ `DONE` (2026-04-19/20). Prochain stop : **#6** — `mcp_role` attribut sur `@command` + refactor `list_mcp_commands(role=...)` pour préparer la façade MCP dual.
-
----
-
 ### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
 
 **Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
@@ -164,6 +143,95 @@ YAGNI V1. À réévaluer une fois les 3 modes MJ livrés et retour d'usage.
 _(vide)_
 
 ## DONE
+
+### 2026-04-20 — 🧠 `memory/memorize` — push live Mongo+Chroma avec dédup sémantique (10 étapes complètes)
+
+Spec : [`documents/memory_service.md`](./documents/memory_service.md) (sections `memorize`, décisions, plan §10). Mini-backlog intégralement `DONE`.
+
+**Architecture livrée** :
+- ABC `MemoryService.memorize(from_char, notes, activity, scene) -> dict` — contrat symétrique de `recall`
+- `chroma_strategy.memorize` — embed unique réutilisé, dédup sémantique `where=(from, about, category)` seuil `dedup_threshold=0.2`, push atomique Mongo (via `character_storage.push_knowledge`) puis ChromaDB (réutilise `_id`/`ts` Mongo). Zéro exception levée — chaque note traitée indépendamment, erreurs reportées dans `details[]`.
+- Commande bus `memory/memorize` avec `mcp=True, mcp_role="player"`, JSONSchema array sur `notes` (`minItems: 1`), enum `category` ∈ `[perceived_traits, assumptions, approach, watchouts]`, `mcp_description` rédigé pour donner l'agentivité au LLM
+- Façade MCP `/sse` : exposition auto via `list_mcp_commands(role="player")` + spécial-case markdown via `format_memorize_markdown` (helper réutilisable)
+- `SessionState.memorize_log: dict[str, list[str]]` (activity_engine) et `DialogueState.memorize_log` (chat_service) — trace par speaker des markdowns de confirmation
+- `context_builder.build_messages` + `chat_service._build_messages` ré-injectent « ## Tes mémorisations récentes » au début du prompt à chaque tour — cohérence narrative, évite le « mémorise et oublie »
+- Config YAML `services.memory_service.dedup_threshold: 0.2` (cosine distance)
+- 12 TU nouveaux (97 total) — format markdown, dispatch command, catégories figées, tool_executor activity_engine (append log, accumulation multi-calls), context_builder injection (ordre whisper → memorize_log → historique)
+
+**Validation E2E** :
+- Isabelle mémorise simultanément `perceived_traits` sur elle-même + `approach` sur Louis en un seul appel (multi-notes via `notes: []`)
+- Formulation 1re personne respectée (« Ma volonté s'efface devant la sienne », « Pour regagner sa faveur, je dois prouver une discipline exe[mplaire] »)
+- Déclenchement initial via whisper MJ (pertinent), puis reformulation utilisateur du `mcp_description` pour favoriser les triggers spontanés
+
+**Hors scope V1 (backlog COLD)** :
+- Weight / boost de confirmation sémantique (zone moyenne)
+- Flag `contradicted_by` pour observations opposées
+- Enforcement serveur « 1 appel memorize par tour » (auto-discipline LLM pour l'instant)
+- Rate-limit `N notes / tour`
+
+**Validation utilisateur** : OK 2026-04-20.
+
+---
+
+### 2026-04-21 — 🎯 `mcp_hint` + groupes narratifs `register_mcp_group(bus, role)`
+
+Correction d'un missing piece identifié après E2E `memorize` : les LLM incarnés ne déclenchaient pas spontanément `recall`/`memorize` sans un hint explicite dans leur system_prompt. Hard-code transitoire ajouté dans `chat_service._build_system_prompt` et `activity_engine._do_give_turn`, puis généralisé proprement.
+
+**Architecture** :
+- `Command.mcp_hint: str | None` — texte narratif « quand/pourquoi » activer le tool, côté expérience subjective du personnage
+- `@command(..., mcp_hint="...")` — validation decoration-time, rejet si `mcp=False`
+- `MCP_ROLES = {"player", "mj", "npc"}` — ajout du `"npc"` pour préparer les futurs PNJ intelligents (backlog Aurore, Lorenzo)
+- `core/mcp.py::McpGroup` + `register_mcp_group(bus, role, intro, outro)` + `get_mcp_group` + `mcp_tool_hints(role)` : compose intro + hints des commandes du groupe + outro, séparateur `\n\n---\n\n` entre groupes `(bus, role)`
+- `commands/memory.py` : `register_mcp_group(memory, player, intro=..., outro=...)` + `mcp_hint` sur `recall_command` et `memorize_command`
+- Consumers nettoyés : `chat_service._build_system_prompt` + `activity_engine._do_give_turn` remplacent leur hard-code par `mcp_tool_hints(role="player")` préfixé au system_prompt
+- 12 TU nouveaux (109 total) — attribut, validation, registration (retrieve/overwrite warning), composition (single/no-group/no-hints/empty/filter-role/multi-bus)
+
+**Propriétés** :
+- Source unique : le texte narratif vit avec la commande (`mcp_hint`) et le contexte thématique (`register_mcp_group`)
+- Extensible : ajouter un futur bus `actions` / `shadow` / `npc` = nouvelles commandes + groupe, **aucune modif consumer**
+- Multi-audience : la clé `(bus, role)` supporte 3 façades MCP à terme (player, mj, npc)
+
+**Validation utilisateur** : OK 2026-04-21.
+
+---
+
+### 2026-04-20 — 🎭 `mj_service` + port Beholder autonome (8 étapes complètes)
+
+Spec : [`documents/mj_service.md`](./documents/mj_service.md). Mini-backlog §10 entièrement DONE.
+
+**Deux axes orthogonaux livrés** :
+- `mj_mode` ∈ `human` | `autonomous`
+- `turning_mode` ∈ `starter` | `named` | `round_robin` | `next_remaining` | `random_remaining` | `random`
+
+**Couches livrées** :
+- `services/activity_service/turning_modes.py` — 6 helpers purs + `TurningMode(StrEnum)` + dispatch (38 TU)
+- `services/mj_service/` — ABC `MJService` (4 hooks : `on_session_start` / `on_turn_complete` / `on_next_turn` / `on_session_end`), factory runtime `build_mj_service(mode)`, stratégies `HumanMJ` (preview SSE `mj.next_ready`) + `AutonomousMJ` (briefing initial, boucle tool-use, safety guard `max_iter = max(max_rounds×10, 30)`, SSE `mj.thinking` + `mj.decision`)
+- `commands/mj.py` — orchestrateur générique `mj/next_turn(session_id)` : `give_turn` / `next_round` / `end` selon `turning_mode` (utilisé par bouton ▶ Next humain ET en raccourci par MJ autonome)
+- `core/command.py` + `core/decorators.py` + `core/mcp.py` — attribut `mcp_role` ∈ {`player`, `mj`} sur `@command`, validation décoration-time, `list_mcp_commands(role=...)` filtré
+- `facade/server.py` — refactor en 2 endpoints SSE (`/sse` player + `/sse/mj` MJ), dispatch générique via bus, fallback markdown pour `recall`
+- `commands/activity.py` — `give_turn`/`next_round`/`end` exposés en `mcp=True, mcp_role="mj"` au LLM MJ
+- `activity_service/engine.py` — instanciation `mj_service` à `run`/`resume`, hooks `_notify_mj_session_start` / `_notify_mj_turn_complete` / `_notify_mj_session_end` (best-effort)
+- `simweb` — `StorageInstancesPanel` (turning_mode 6 valeurs réelles, select `mj_mode`, action ⎘ Duplicate avec slug obligatoire), `ActivityDashboardPanel` (colonne `mj_mode` dans RunsList, bouton `▶ Next` step-by-step + label preview « Prochain : X »)
+- Migration silencieuse : `player_rules` → `rules.players` (audit 4 couches conformes dès le départ, seul `context_builder` à patcher)
+
+**Validation E2E** :
+- 85 TU verts (turning_modes 38 + mj_service 11 + engine_hooks 9 + mj_command 6 + autonomous_mj 7 + mcp_roles 12 + chat retro 2)
+- Run autonomous validé sur louis/isabelle round_robin : 8 iterations en 3min23, `end()` décidé par le MJ lui-même (pas safety guard), conversation continue gérée par le provider
+
+**Reste en COLD (YAGNI V1)** : dialog de lancement avec override `mj_mode` au run.
+
+**Validation utilisateur** : OK 2026-04-20.
+
+---
+
+### 2026-04-20 — simweb : action ⎘ Duplicate sur `StorageInstancesPanel` (W4)
+
+- Bouton ⎘ par ligne d'instance → deep-copy via `entryToForm`, slug reset, formulaire en mode création
+- Validation slug : `required` HTML5 + `aria-invalid` + label « ⚠ requis » + bordure danger sur l'input quand soumission échoue, clear automatique à la saisie
+- Cas d'usage : dériver rapidement une variante (ex: même config mais `mj_mode=autonomous` au lieu de `human`)
+- Validation utilisateur : OK 2026-04-20.
+
+---
 
 ### 2026-04-19 — Audit refactor : source unique MCP + RunState + confirm delete conditionnelle
 

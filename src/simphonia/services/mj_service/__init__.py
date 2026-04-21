@@ -2,8 +2,8 @@
 
 Contrairement aux autres services sim-phonia (multi-stratégies sélectionnées au
 bootstrap via YAML), le `mj_service` n'est **pas un singleton**. La stratégie
-(`human` / `human_in_loop` / `autonomous`) dépend du `mj_mode` de chaque
-`activity_run`, pas d'un choix d'infrastructure global.
+(`human` / `autonomous`) dépend du `mj_mode` de chaque `activity_run`, pas
+d'un choix d'infrastructure global.
 
 Pattern : factory runtime. L'engine appelle `build_mj_service(mode)` à
 `activity/run` et stocke l'instance dans `SessionState.mj_service`. La vie du
@@ -21,18 +21,28 @@ if TYPE_CHECKING:
 class MJService(ABC):
     """Contrat commun aux stratégies MJ.
 
-    Les trois méthodes couvrent le cycle de vie d'un run. L'engine les appelle
+    Les 4 hooks couvrent le cycle de vie d'un run. L'engine les appelle
     aux moments clés ; la stratégie décide quoi faire (rien, résoudre un
     prochain speaker, déclencher une boucle LLM, etc.).
     """
 
     @abstractmethod
+    def on_session_start(self, session: "SessionState") -> None:
+        """Appelé par l'engine juste après la création de la session (`run` / `resume`).
+
+        - `human`      : log no-op (l'humain pilote via le dashboard)
+        - `autonomous` : construit le briefing initial dans `mj_history` et
+                         déclenche le premier réveil du LLM MJ. Celui-ci émet
+                         un `give_turn` vers le starter → l'activité démarre
+                         sans intervention humaine.
+        """
+
+    @abstractmethod
     def on_turn_complete(self, session: "SessionState", exchange: dict) -> None:
         """Appelé par l'engine après chaque tour résolu (exchange ajouté à l'history).
 
-        - `human`         : no-op
-        - `human_in_loop` : pré-résout le prochain speaker, publie SSE `mj.next_ready`
-        - `autonomous`    : déclenche immédiatement le prochain tour LLM
+        - `human`      : émet SSE `mj.next_ready` (preview du prochain speaker)
+        - `autonomous` : réveille le LLM MJ pour décider du prochain coup
         """
 
     @abstractmethod
@@ -62,13 +72,10 @@ def build_mj_service(mode: str) -> MJService:
         from simphonia.services.mj_service.strategies.human_strategy import HumanMJ
         return HumanMJ()
 
-    # Stratégies à venir — référencées ici pour que l'erreur soit explicite :
-    # if mode == "human_in_loop":  # étape #5
-    #     ...
-    # if mode == "autonomous":     # étape #8
-    #     ...
+    if mode == "autonomous":
+        from simphonia.services.mj_service.strategies.autonomous_strategy import AutonomousMJ
+        return AutonomousMJ()
 
     raise ValueError(
-        f"Unknown mj_mode: {mode!r}. Valid (V1): ['human']. "
-        f"Planned: ['human_in_loop', 'autonomous']."
+        f"Unknown mj_mode: {mode!r}. Valid: ['human', 'autonomous']."
     )

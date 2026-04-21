@@ -10,7 +10,15 @@ from simphonia.core.errors import (
     DuplicateCascade,
     DuplicateCommand,
 )
-from simphonia.core.mcp import list_mcp_commands, mcp_tool_definitions, to_tool_definitions
+from simphonia.core.mcp import (
+    McpGroup,
+    get_mcp_group,
+    list_mcp_commands,
+    mcp_tool_definitions,
+    mcp_tool_hints,
+    register_mcp_group,
+    to_tool_definitions,
+)
 from simphonia.core.registry import BusRegistry, default_registry
 
 __all__ = [
@@ -29,7 +37,11 @@ __all__ = [
     "cascade",
     "command",
     "default_registry",
+    "McpGroup",
+    "get_mcp_group",
     "list_mcp_commands",
     "mcp_tool_definitions",
+    "mcp_tool_hints",
+    "register_mcp_group",
     "to_tool_definitions",
 ]
