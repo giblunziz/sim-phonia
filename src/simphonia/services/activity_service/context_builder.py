@@ -16,17 +16,17 @@ PUBLIC_FIELDS  = {"from", "to", "talk", "message", "action", "actions", "body", 
 #  TOOLS
 # ======================================================================
 
-def get_tools(activity: dict | None = None) -> list[dict]:
-    """Retourne les tool definitions à passer au provider **joueur**.
+def get_tools(activity: dict | None = None, role: str = "player") -> list[dict]:
+    """Retourne les tool definitions à passer au provider pour un rôle donné.
 
-    Source de vérité : le décorateur `@command(mcp=True, mcp_role="player", ...)`.
-    Filtre explicite sur `role="player"` — les tools MJ (`give_turn`, etc.) ne
-    sont pas exposés aux LLM joueurs.
+    Source de vérité : le décorateur `@command(mcp=True, mcp_role=..., ...)`.
+    Le `role` est habituellement dérivé via `character_service.get().get_type(speaker)` —
+    un `npc` ou `human` recevra l'ensemble de tools correspondant (pouvant être vide).
 
     Le paramètre `activity` est réservé pour un futur filtrage par allowlist
     (`activity['tools_allowed']`).
     """
-    return mcp_tool_definitions(role="player")
+    return mcp_tool_definitions(role=role)
 
 
 # ======================================================================

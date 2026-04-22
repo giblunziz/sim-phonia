@@ -5,7 +5,11 @@ import {
   storagePutCharacter,
   storageDeleteCharacter,
   resetCharacters,
+  getCharacterTypes,
 } from '../../api/simphonia.js';
+
+const DEFAULT_TYPE = 'player';
+const UNSET_TYPE = '';  // valeur du select quand l'utilisateur ne veut pas fixer d'attribut `type`
 
 const EMPTY_SCHEMA = {
   _id: '',
@@ -46,9 +50,11 @@ const EMPTY_SCHEMA = {
 
 export default function StorageCharactersPanel() {
   const [chars, setChars]         = useState([]);
+  const [types, setTypes]         = useState([]);
   const [selected, setSelected]   = useState(null);
   const [detail, setDetail]       = useState(null);
   const [editJson, setEditJson]   = useState('');
+  const [editType, setEditType]   = useState(UNSET_TYPE);
   const [editing, setEditing]     = useState(false);
   const [jsonError, setJsonError] = useState(null);
   const [busy, setBusy]           = useState({});
@@ -62,6 +68,12 @@ export default function StorageCharactersPanel() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    getCharacterTypes()
+      .then((list) => { if (Array.isArray(list) && list.length) setTypes(list); })
+      .catch((e) => { console.error('character/types KO — serveur pas redémarré ?', e); });
+  }, []);
+
   const handleSelect = async (id) => {
     if (selected === id) { setSelected(null); setDetail(null); return; }
     setSelected(id);
@@ -73,6 +85,8 @@ export default function StorageCharactersPanel() {
   };
 
   const handleEdit = () => {
+    const currentType = types.includes(detail?.type) ? detail.type : UNSET_TYPE;
+    setEditType(currentType);
     setEditJson(JSON.stringify(detail, null, 2));
     setJsonError(null);
     setEditing(true);
@@ -83,6 +97,8 @@ export default function StorageCharactersPanel() {
     try { parsed = JSON.parse(editJson); }
     catch { setJsonError('JSON invalide'); return; }
     if (!parsed._id) { setJsonError('`_id` obligatoire'); return; }
+    if (editType === UNSET_TYPE) delete parsed.type;
+    else parsed.type = editType;
     setBusy((b) => ({ ...b, save: true }));
     try {
       const updated = await storagePutCharacter(parsed);
@@ -101,6 +117,7 @@ export default function StorageCharactersPanel() {
   const handleCreate = () => {
     setSelected(null);
     setDetail(null);
+    setEditType(UNSET_TYPE);
     setEditJson(JSON.stringify(EMPTY_SCHEMA, null, 2));
     setJsonError(null);
     setEditing(true);
@@ -174,6 +191,17 @@ export default function StorageCharactersPanel() {
 
           {editing ? (
             <>
+              <div className="panel-actions" style={{ marginBottom: '0.5rem' }}>
+                <label htmlFor="character-type" style={{ fontSize: '0.85rem' }}>Type</label>
+                <select
+                  id="character-type"
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
+                >
+                  <option value={UNSET_TYPE}>— non défini (défaut : {DEFAULT_TYPE}) —</option>
+                  {types.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
               <textarea
                 className="json-editor"
                 value={editJson}

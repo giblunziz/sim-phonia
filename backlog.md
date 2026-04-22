@@ -5,43 +5,6 @@ Une entrée ne passe en `DONE` qu'après validation de l'utilisateur (tests manu
 
 ## HOT
 
-### 🔧 INFRA — Backbone bus + cascades + façade MCP (en cours)
-
-**Objectif immédiat** : poser l'infrastructure du serveur de services avant de porter quoi que ce soit depuis Symphonie. Décisions techniques figées dans `documents/simphonia.md` § *Conventions d'implémentation*.
-
-**Plan séquencé (chaque tâche est testable isolément)** :
-
-| # | Étape | Livrable |
-|---|---|---|
-| ~~#10~~ | ~~`@command` étendu~~ | ✅ livré 2026-04-17 (voir `DONE`) |
-| ~~#11~~ | ~~`@cascade` + `ShortCircuit`~~ | → déplacé en WARM |
-| ~~#12~~ | ~~`Bus.dispatch` refactor~~ | → déplacé en WARM |
-| ~~#13~~ | ~~Validation startup~~ | → déplacé en WARM |
-| ~~#14~~ | ~~Façade MCP~~ | ✅ livré 2026-04-19 (voir `DONE`) |
-| **#15** | Smoke test E2E | Bloqué sur #11/#12/#13 (en WARM) |
-
-**Hors scope de ce bloc** : moteur de tour joueur, authentification MCP.
-
-**Dépendance ajoutée** : `mcp>=1.0` dans `pyproject.toml` + `requirements.txt` (livré avec #14).
-
----
-
-### C1 — `chat_service` (providers + sessions de dialogue 1-to-1)
-
-Spec complète dans `documents/chat_service.md`. Validé utilisateur le 2026-04-18.
-
-| # | Étape | Statut |
-|---|---|---|
-| ~~1~~ | ~~Porter providers LLM (ollama + anthropic) dans `src/simphonia/providers/`~~ | ✅ validé 2026-04-18 |
-| ~~2~~ | ~~`provider_registry` — factory + `init/get` depuis config YAML `providers:`~~ | ✅ validé 2026-04-18 |
-| ~~3~~ | ~~Squelette `chat_service` (ABC + `DialogueState` + start/reply/stop sans LLM)~~ | ✅ validé 2026-04-18 |
-| ~~4~~ | ~~Logger fichier `/logs/chat.log` (reset au boot)~~ | ✅ validé 2026-04-18 |
-| ~~5~~ | ~~Commandes bus `chat` + câblage bootstrap~~ | ✅ validé 2026-04-18 |
-| ~~6~~ | ~~Génération LLM + schéma JSON `{talk:[...]}` dans system prompt~~ | ✅ validé 2026-04-18 |
-| 7 | Façade MCP (bloqué sur INFRA #14) | En attente |
-
----
-
 ### H1 — Modélisation des entités cardinales (pydantic + collections MongoDB)
 
 - Schéma `Character` aligné sur `.working/antoine.json` (identité, appearance, background, flaws, psychology.transactional, psychology.insight, values, relationship, game.phobia/secret/prior_knowledge, memory.slots)
@@ -70,21 +33,6 @@ Spec complète dans `documents/chat_service.md`. Validé utilisateur le 2026-04-
 - Chaîne d'appel cible : `LLM → simphonia (MCP) → memory_service → shadow_memory_service → response`
 - Prompt système à injecter dans chaque LLM joueur : indication d'usage du tool, contrainte de ne pas inventer d'infos sur les autres
 
-### H5 — Implémentation `shadow_memory_service` + "psy"
-
-Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle, chaîne d'exécution, opacité, deux casquettes du psy (runtime + production) sont actés.
-
-**Actions identifiées** :
-
-- **H5.a — Agent `psy`** : nouveau PNJ avec fiche + system prompt dédié, branché sur l'infra providers (OpenAI/Claude) avec config par perso + fallback. Dev/proto en gemma4. Préalable : `character_service` porté.
-- **H5.b — Collection shadow MongoDB** : spec du schéma d'entrée (point ouvert : calque `PerceptionEntry` avec catégorie spéciale vs schéma propre avec `intensity` / `source_event_id` / `last_reinforced_at`). Initialiser la collection + le process de sync mongo→chroma (collection dédiée, séparée de `knowledge`).
-- **H5.c — `shadow_memory_service`** : service dédié exposant deux fonctions — `shadow_before_call` (cascade `memory/recall` before, réécrit la query via un appel au psy) et `shadow_after_call` (cascade `memory/recall` after, 2e RAG sur la collection shadow + fusion). Dépend de #11/#12 (cascades) et de H5.a.
-- **H5.d — État "focus" unilatéral** : choisir la forme de stockage (poids vs typologie vs hybride), le déclencheur d'update (après événement notable), les règles de priorité multi-focus.
-- **H5.e — Garde-fous coût LLM** : skip quand aucun focus actif sur la cible, cache par hash de query, rate-limit par tour — à benchmarker une fois la chaîne complète en place.
-- **H5.f — Trigger de re-sync mongo→chroma** pendant le jeu : identifier l'événement déclencheur (fin d'exchange ? insert mongo ? commande explicite ?) et le câbler.
-
-**Préalables bloquants** : tickets #11 / #12 (cascades) et #14 (façade MCP) du bloc INFRA, plus H1 (modélisation) et le port de `character_service`.
-
 ### H6 — Moteur de tour de joueur (boucle agentique tool-use)
 
 - Orchestrateur : `prompt → tool_call* → final_response` avec borne d'itérations configurable
@@ -93,18 +41,6 @@ Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle,
 - Capability flag `tool_use` sur le provider/model → refuser modèles non compatibles
 
 ## WARM
-
-### 🔧 INFRA — Cascades + validation startup
-
-| # | Étape | Livrable |
-|---|-------|----------|
-| **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
-| **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
-| **#13** | Validation startup | Cascade orpheline → fail ; `mcp=True` sans `from_char` → fail |
-
-Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis pour `shadow_memory_service` (H5.c) et smoke test E2E (#15).
-
----
 
 ### W1 — Compression mémoire (recaps)
 
@@ -121,14 +57,33 @@ Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis pour `sha
 - Formaliser la `scene` au-delà d'un simple string (participants de la scène, props, contraintes narratives)
 - Grouper plusieurs activités dans une `session`
 
-### W4 — simweb : action `duplicate` sur `StorageInstancesPanel`
-
-- Bouton ⎘ (ou équivalent) par ligne → deep-copy de l'instance, slug reset (vide)
-- Le dialog de création s'ouvre pré-rempli avec tous les champs sauf `_id`/`slug`
-- Validation : le slug est un champ obligatoire à la soumission (actuellement il est vérifié en `if (!id) setError(...)` mais l'UI ne l'indique pas — ajouter `required` + aria-invalid + feedback visuel)
-- Cas d'usage : dériver rapidement une variante d'instance (même scène + players, rules ou mj_mode différents) sans ressaisie
-
 ## COLD
+
+### 🔧 INFRA — Cascades + validation startup + smoke E2E
+
+Spec dans `documents/simphonia.md` § *Services cascadés*. Prérequis historique de `shadow_memory_service` (H5.c) — gelé conjointement avec H5.
+
+| # | Étape | Livrable |
+|---|-------|----------|
+| **#11** | `@cascade` + `ShortCircuit` | Décorateur, exception, storage trié `(priority, discovery_order)` dans `BusRegistry` |
+| **#12** | `Bus.dispatch` refactor | Pipeline `before* → call → after*`, injection `from_char` (par nom dans signature), gestion d'erreurs spécifiée |
+| **#13** | Validation startup | Cascade orpheline → fail ; `mcp=True` sans `from_char` → fail |
+| **#15** | Smoke test E2E | Bloqué sur #11/#12/#13 |
+
+### H5 — `shadow_memory_service` + "psy"
+
+Synthèse d'étude figée dans `documents/shadow_memory.md` (2026-04-17). Rôle, chaîne d'exécution, opacité, deux casquettes du psy (runtime + production) sont actés.
+
+**Actions identifiées** :
+
+- **H5.a — Agent `psy`** : nouveau PNJ avec fiche + system prompt dédié, branché sur l'infra providers (OpenAI/Claude) avec config par perso + fallback. Dev/proto en gemma4. Préalable : `character_service` porté.
+- **H5.b — Collection shadow MongoDB** : spec du schéma d'entrée (point ouvert : calque `PerceptionEntry` avec catégorie spéciale vs schéma propre avec `intensity` / `source_event_id` / `last_reinforced_at`). Initialiser la collection + le process de sync mongo→chroma (collection dédiée, séparée de `knowledge`).
+- **H5.c — `shadow_memory_service`** : service dédié exposant deux fonctions — `shadow_before_call` (cascade `memory/recall` before, réécrit la query via un appel au psy) et `shadow_after_call` (cascade `memory/recall` after, 2e RAG sur la collection shadow + fusion). Dépend de #11/#12 (cascades) et de H5.a.
+- **H5.d — État "focus" unilatéral** : choisir la forme de stockage (poids vs typologie vs hybride), le déclencheur d'update (après événement notable), les règles de priorité multi-focus.
+- **H5.e — Garde-fous coût LLM** : skip quand aucun focus actif sur la cible, cache par hash de query, rate-limit par tour — à benchmarker une fois la chaîne complète en place.
+- **H5.f — Trigger de re-sync mongo→chroma** pendant le jeu : identifier l'événement déclencheur (fin d'exchange ? insert mongo ? commande explicite ?) et le câbler.
+
+**Préalables bloquants** : #11/#12 (cascades, en COLD) + H1 (modélisation).
 
 ### 🎭 MJ — Dialog de lancement d'`activity_run` avec override `mj_mode`
 
@@ -143,6 +98,50 @@ YAGNI V1. À réévaluer une fois les 3 modes MJ livrés et retour d'usage.
 _(vide)_
 
 ## DONE
+
+### 2026-04-22 — 🎭 `character.type` (player|npc|human) + filtre MCP dynamique
+
+Nouveau discriminant de nature sur les fiches, consommé par les pipelines MCP pour filtrer les tools exposés au LLM incarné.
+
+**Back** :
+- `services/character_service` : constantes `CHARACTER_TYPES = ("player", "npc", "human")` + `DEFAULT_CHARACTER_TYPE = "player"`, méthode concrète `CharacterService.get_type(name) -> str` sur l'ABC (fallback safe triple : `CharacterNotFound` / attribut absent / valeur hors whitelist → `player`)
+- `commands/character.py` : commande `character/types` → `list[str]`
+- `services/activity_service/context_builder.py` : `get_tools(activity, role="player")` — param `role` ajouté (forward à `mcp_tool_definitions`)
+- `services/activity_service/engine.py::_do_give_turn` : `role = char_svc.get_type(slug)` → propagé à `mcp_tool_hints` + `get_tools`
+- `services/chat_service/strategies/default_strategy.py` :
+  - `_build_system_prompt(to_card, from_char, human, role)` : param `role` ajouté
+  - `_get_mcp_tools(role)` : param `role` ajouté
+  - `_call_llm` : dérive `role = character_service.get().get_type(from_char)` quand `from_char` fourni
+  - 3 callers (`start` / `reply` / `auto_reply`) : calculent `to_role` / `speaker_role` / `other_role` via `get_type()` et le passent
+
+**Front simweb** :
+- `api/simphonia.js` : `getCharacterTypes()` dispatch `character/types`
+- `StorageCharactersPanel.jsx` : `<select>` peuplé dynamiquement depuis le back en mode édition/création. Option "— non défini (défaut : player) —" en tête → attribut `type` **supprimé** du JSON au save (cohérent schemaless). Les 3 options back renvoyées sont affichées ensuite. Fallback silencieux si `character/types` KO (log console + select réduit à l'option vide).
+
+**Propriétés** :
+- Aucune régression : toute fiche sans `type` → fallback `player` → comportement identique
+- Fiche `type="npc"` → `mcp_tool_definitions(role="npc")` retourne `[]`, le LLM incarné ne reçoit ni tools ni hints narratifs
+- Fiche `type="human"` → idem (pas encore court-circuité au niveau moteur LLM — point ouvert)
+- Façade MCP SSE externe (`facade/server.py`) non touchée : expose toujours `"player"` sur `/sse` et `"mj"` sur `/sse/mj` (consommation externe type Claude Desktop)
+
+**Validation utilisateur** : OK 2026-04-22.
+
+---
+
+### 2026-04-18 — C1 `chat_service` (providers + sessions de dialogue 1-to-1)
+
+Spec : [`documents/chat_service.md`](./documents/chat_service.md). Étapes 1-6 validées 2026-04-18.
+
+- Providers LLM portés (`ollama` + `anthropic`) dans `src/simphonia/providers/`
+- `provider_registry` — factory + `init/get` depuis config YAML `providers:`
+- Squelette `chat_service` (ABC + `DialogueState` + start/reply/stop)
+- Logger fichier `/logs/chat.log` (reset au boot)
+- Commandes bus `chat` + câblage bootstrap
+- Génération LLM + schéma JSON `{talk:[...]}` dans system prompt
+
+**Étape 7 (façade MCP) sans objet** : l'expo auto des `@command(mcp=True)` couvre déjà les tools consommés par le LLM incarné (`memory/recall` + `memory/memorize`). Les commandes `chat/*` sont du pilotage client, pas des tools LLM.
+
+---
 
 ### 2026-04-20 — 🧠 `memory/memorize` — push live Mongo+Chroma avec dédup sémantique (10 étapes complètes)
 

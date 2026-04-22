@@ -19,6 +19,8 @@ Le service expose, pour cette première itération, deux fonctions :
 |---|---|---|
 | `get_character_list` | Retourne la liste des identifiants (`_id`) des personnages connus | `list[str]` |
 | `get_character`     | Retourne la fiche complète d'un personnage donné                  | `dict` (fiche complète, **schemaless**) |
+| `get_identifier`    | Résolution fuzzy d'un nom (exact → token → partiel) vers `_id`    | `str \| None` |
+| `get_type`          | Retourne le type du personnage — `player` / `npc` / `human` (fallback safe `player`) | `str` |
 | `reset`             | Recharge toutes les fiches depuis la source de données            | `int` (nombre de fiches chargées) |
 
 Ces commandes :
@@ -59,6 +61,26 @@ Règles qui encadrent ce comportement :
 - La commande **`reset`** vide le cache et le reconstruit depuis la source — c'est le mécanisme officiel pour effacer les enrichissements accumulés en session.
 
 Corollaire : les clés runtime ne sont jamais persistées. Un redémarrage (ou un `reset`) les fait disparaître. Si un service veut persister un enrichissement, c'est à lui de le gérer dans sa propre couche de stockage.
+
+### Attribut `type` (optionnel, schemaless)
+
+Chaque fiche peut déclarer un attribut racine **`type`** pris dans la whitelist figée : `player`, `npc`, `human`.
+
+- **Défaut** : `player` — tout `character.type` absent, invalide, ou valeur hors whitelist est traité comme `player`.
+- **Lecture safe** : `character_service.get().get_type(name)` applique le fallback de bout en bout (fiche introuvable → `player`, attribut absent → `player`, valeur inconnue → `player`). Jamais d'exception.
+- **Consommation** : les consumers MCP (`chat_service`, `activity_engine`, `context_builder.get_tools`) dérivent le rôle MCP du LLM incarné via `get_type(speaker)` et l'utilisent pour filtrer `mcp_tool_definitions(role=...)` et `mcp_tool_hints(role=...)`.
+- **Constantes exportées** : `CHARACTER_TYPES = ("player", "npc", "human")` et `DEFAULT_CHARACTER_TYPE = "player"` depuis `services.character_service`.
+- **Commande bus** : `character/types` → `list[str]` (les types autorisés). Consommée par simweb pour peupler dynamiquement le select de saisie.
+
+Sémantique par type :
+
+| Type | LLM incarné ? | Tools MCP exposés |
+|---|---|---|
+| `player` | Oui | Tools `mcp_role="player"` (recall, memorize, …) |
+| `npc`    | Oui | Tools `mcp_role="npc"` (liste vide aujourd'hui — à définir) |
+| `human`  | Non (input clavier) | Aucun (côté moteur, un `human` ne devrait pas passer par la boucle LLM) |
+
+Cohérent avec l'architecture schemaless : l'attribut n'est pas obligatoire, le fallback `player` préserve le comportement historique.
 
 ### Architecture : interface + stratégies (provider)
 

@@ -1,5 +1,6 @@
 from simphonia.core import command
 from simphonia.services import character_service
+from simphonia.services.character_service import CHARACTER_TYPES
 
 CHARACTER_BUS = "character"
 
@@ -29,3 +30,12 @@ def get_command(name: str) -> dict:
 )
 def reset_command() -> int:
     return character_service.get().reset()
+
+
+@command(
+    bus=CHARACTER_BUS,
+    code="types",
+    description="Retourne la liste des types de personnage supportés (player, npc, human)",
+)
+def types_command() -> list[str]:
+    return list(CHARACTER_TYPES)

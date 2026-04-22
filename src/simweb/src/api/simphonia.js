@@ -26,6 +26,10 @@ export async function resetCharacters() {
   return dispatch('character', 'reset');
 }
 
+export async function getCharacterTypes() {
+  return dispatch('character', 'types');
+}
+
 export async function ping() {
   return dispatch('system', 'ping');
 }

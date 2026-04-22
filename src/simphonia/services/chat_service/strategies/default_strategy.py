@@ -42,16 +42,16 @@ class DefaultChatService(ChatService):
         if name not in character_service.get().get_character_list():
             raise CharacterNotFound(name)
 
-    def _build_system_prompt(self, to_card: dict, from_char: str, human: bool) -> str:
+    def _build_system_prompt(self, to_card: dict, from_char: str, human: bool, role: str) -> str:
         fiche = json.dumps(to_card, ensure_ascii=False, indent=2)
         interlocutor = (
             f"Tu parles avec un humain nommé {from_char}."
             if human
             else f"Tu parles avec le personnage {from_char}."
         )
-        # Hints narratifs composés depuis les @command(mcp=True, mcp_role="player", mcp_hint=...)
-        # et les `register_mcp_group(bus, "player", intro, outro)` des modules commands/*.
-        memory_hint = mcp_tool_hints(role="player")
+        # Hints narratifs composés depuis les @command(mcp=True, mcp_role=<role>, mcp_hint=...)
+        # et les `register_mcp_group(bus, <role>, intro, outro)` des modules commands/*.
+        memory_hint = mcp_tool_hints(role=role)
 
         schema = (
             'Ta réponse finale doit être UNIQUEMENT un objet JSON valide, sans texte avant ni après.\n'
@@ -66,12 +66,13 @@ class DefaultChatService(ChatService):
         )
         return f"Tu es ce personnage :\n{fiche}\n\n{interlocutor}\n\n{memory_hint}\n\n{schema}"
 
-    def _get_mcp_tools(self) -> list[dict]:
-        """Tool definitions (format provider-agnostic) pour les commandes `mcp_role="player"`.
+    def _get_mcp_tools(self, role: str) -> list[dict]:
+        """Tool definitions (format provider-agnostic) pour les commandes d'un rôle donné.
 
-        Filtre explicite : le chat 1-to-1 est un contexte joueur, pas MJ.
+        Le `role` est dérivé depuis `character.type` via `character_service.get_type()`
+        par les callers (start / reply / auto_reply).
         """
-        return mcp_tool_definitions(role="player")
+        return mcp_tool_definitions(role=role)
 
     def _make_tool_executor(self, from_char: str, state: "DialogueState | None" = None) -> ToolExecutor:
         """Retourne un exécuteur de tools avec from_char injecté.
@@ -176,8 +177,14 @@ class DefaultChatService(ChatService):
         from_char: str | None = None,
         state: "DialogueState | None" = None,
     ) -> str:
-        tools    = self._get_mcp_tools() if from_char else None
-        executor = self._make_tool_executor(from_char, state) if from_char else None
+        if from_char:
+            from simphonia.services import character_service
+            role     = character_service.get().get_type(from_char)
+            tools    = self._get_mcp_tools(role)
+            executor = self._make_tool_executor(from_char, state)
+        else:
+            tools    = None
+            executor = None
         reply_text, stats = self._provider.call(system_prompt, messages, tools=tools, tool_executor=executor)
         if reply_text is None:
             raise LLMError("Le provider LLM n'a retourné aucune réponse")
@@ -239,7 +246,8 @@ class DefaultChatService(ChatService):
 
         # Générer la réponse de `to` via LLM (sauf si to est un humain — non géré MVP)
         to_card = character_service.get().get_character(to)
-        system_prompt = self._build_system_prompt(to_card, from_char, human)
+        to_role = character_service.get().get_type(to)
+        system_prompt = self._build_system_prompt(to_card, from_char, human, to_role)
         messages = self._build_messages(state.history, to, memorize_log=state.memorize_log.get(to))
         try:
             reply_text = self._call_llm(system_prompt, messages, from_char=to, state=state)
@@ -292,7 +300,8 @@ class DefaultChatService(ChatService):
         # Déterminer qui répond (l'autre participant)
         responder = state.participants[1] if from_char == state.participants[0] else state.participants[0]
         to_card = character_service.get().get_character(responder)
-        system_prompt = self._build_system_prompt(to_card, from_char, human)
+        to_role = character_service.get().get_type(responder)
+        system_prompt = self._build_system_prompt(to_card, from_char, human, to_role)
         messages = self._build_messages(state.history, responder, memorize_log=state.memorize_log.get(responder))
         try:
             reply_text = self._call_llm(system_prompt, messages, from_char=responder, state=state)
@@ -324,7 +333,8 @@ class DefaultChatService(ChatService):
         # 1. Générer la réplique de speaker
         try:
             speaker_card = character_service.get().get_character(speaker)
-            sp = self._build_system_prompt(speaker_card, from_char=other, human=False)
+            speaker_role = character_service.get().get_type(speaker)
+            sp = self._build_system_prompt(speaker_card, from_char=other, human=False, role=speaker_role)
             msgs = self._build_messages(state.history, speaker, memorize_log=state.memorize_log.get(speaker))
             speaker_say = self._call_llm(sp, msgs, from_char=speaker, state=state)
         except LLMError as e:
@@ -344,7 +354,8 @@ class DefaultChatService(ChatService):
         # 2. Générer la réponse de other
         try:
             other_card = character_service.get().get_character(other)
-            sp2 = self._build_system_prompt(other_card, from_char=speaker, human=False)
+            other_role = character_service.get().get_type(other)
+            sp2 = self._build_system_prompt(other_card, from_char=speaker, human=False, role=other_role)
             msgs2 = self._build_messages(state.history, other)
             other_reply = self._call_llm(sp2, msgs2, from_char=other)
         except LLMError as e:

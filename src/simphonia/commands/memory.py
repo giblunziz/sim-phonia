@@ -40,7 +40,7 @@ def resync_command() -> dict:
         "- `recall` — quand tu sens un doute, un déjà-vu, quand un nom te dit quelque chose, "
         "quand quelqu'un dit un truc qui te semble pas cohérent avec ce que tu sais, "
         "quand tu veux vérifier une impression."
-        "utilise cet outil avec ton propre prénom pour remonter tes propres souvenir en debut de session."
+        "utilise cet outil avec ton propre prénom pour remonter tes propres souvenir en debut de session exemple: { about:'<ton prenom>', context:'Que sais-je ?'}"
     ),
     mcp_description="Cherche dans tes souvenirs ce que tu sais sur quelqu'un dans un contexte donné.",
     mcp_params={

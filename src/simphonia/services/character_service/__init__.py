@@ -10,7 +10,12 @@ import logging
 import unicodedata
 from abc import ABC, abstractmethod
 
+from simphonia.core.errors import CharacterNotFound
+
 log = logging.getLogger("simphonia.character")
+
+CHARACTER_TYPES: tuple[str, ...] = ("player", "npc", "human")
+DEFAULT_CHARACTER_TYPE = "player"
 
 
 def _normalize(s: str) -> str:
@@ -85,6 +90,21 @@ class CharacterService(ABC):
         (rescan de répertoire pour `json_strategy`, `find()` pour
         `mongodb_strategy`, etc.).
         """
+
+    def get_type(self, name: str) -> str:
+        """Retourne le type du personnage — `player`, `npc`, `human`.
+
+        Fallback `"player"` si la fiche est absente ou si `type` est absent /
+        invalide (contrat schemaless).
+        """
+        try:
+            character = self.get_character(name)
+        except CharacterNotFound:
+            return DEFAULT_CHARACTER_TYPE
+        value = character.get("type") if isinstance(character, dict) else None
+        if isinstance(value, str) and value in CHARACTER_TYPES:
+            return value
+        return DEFAULT_CHARACTER_TYPE
 
 
 def build_character_service(service_config: dict) -> CharacterService:

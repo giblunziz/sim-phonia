@@ -264,9 +264,11 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
             "ts":          _now_iso(),
         })
 
-    # Hints narratifs composés depuis les @command(mcp=True, mcp_role="player", mcp_hint=...)
-    # et les `register_mcp_group(bus, "player", intro, outro)` des modules commands/*.
-    memory_hint   = mcp_tool_hints(role="player")
+    # Rôle MCP dérivé du type du personnage — les tools exposés au LLM incarné
+    # dépendent de `character.type` (player | npc | human), fallback "player".
+    role = char_svc.get_type(slug)
+
+    memory_hint   = mcp_tool_hints(role=role)
     system_prompt = build_system_prompt(
         slug, session.instance, session.activity, session.scene,
         character, knowledge_entries,
@@ -293,7 +295,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
             trigger += " Rappel : ta réponse doit être UNIQUEMENT du JSON valide, sans texte avant ni après."
         messages = [{"role": "user", "content": trigger}]
 
-    tools    = get_tools(session.activity)
+    tools    = get_tools(session.activity, role=role)
     provider = provider_registry.get(session.provider_name)
     executor = _make_tool_executor(slug, session)
 
