@@ -3,7 +3,7 @@ from simphonia.services import memory_service
 
 MEMORY_BUS = "memory"
 
-MEMORIZE_CATEGORIES = ["perceived_traits", "assumptions", "approach", "watchouts"]
+MEMORIZE_CATEGORIES = ["perceived_traits", "assumptions", "approach", "watchouts", "presentation"]
 
 
 # ─ Groupe MCP narratif pour les tools mémoire côté joueur ─────────────────
@@ -81,6 +81,9 @@ def recall_command(
     mcp_hint=(
         "- `memorize` — quand un moment te marque, quand tu apprends quelque chose de surprenant, "
         "quand ton instinct te dit \"ça, faut que je m'en souvienne\"."
+        "N'hésite pas à enregistrer toutes nouvelle connaissance à propos des personnes que tu rencontre."
+        "Garde un maximum de trace de chaque évènement."
+        "Soit descriptif, n'omet aucun détail. utilise cette mémoire au maximum"
     ),
     mcp_description=(
         "Enregistre toi même, dans ta mémoire, ce qu'il te semble pertinent à propos des autres ou sur toi-même. "
@@ -113,6 +116,7 @@ def recall_command(
                                 "assumptions : hypothèses que tu formules à son sujet. "
                                 "approach : façon de l'aborder qui fonctionne (ou pas). "
                                 "watchouts : signaux d'alerte / vigilance."
+                                "presentation: a chaque nouvelle rencontre, décrit  la personne en détail"
                             ),
                         },
                         "value": {

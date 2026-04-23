@@ -88,9 +88,9 @@ def format_exchange(speaker: str, raw_response: str) -> str:
 
 def build_system_prompt(
     player: str,
-    instance: dict,
-    activity: dict,
-    scene: dict,
+    instance: dict | None,
+    activity: dict | None,
+    scene: dict | None,
     character: dict,
     knowledge_entries: list[dict],
     system_schemas: list[dict] | None = None,
@@ -100,9 +100,13 @@ def build_system_prompt(
     Ordre strict :
       1. Schema JSON (si défini dans l'activité)
       2. Scène
-      3. Règles joueur
+      3. Règles joueur (skippé si `activity is None`)
       4. Impressions sur les autres (knowledge, presentation)
       5. Fiche personnage
+
+    `instance` et `activity` peuvent être `None` pour un usage hors activity_engine
+    (ex: chat_service simple). Dans ce cas, la section "Règles du jeu" est
+    entièrement omise — pas de warning.
     """
     parts = []
 
@@ -118,23 +122,24 @@ def build_system_prompt(
         parts.append("\n".join(lines))
 
     # 2. Scène
-    scene_content = scene.get("content", "")
+    scene_content = scene.get("content", "") if scene else ""
     if scene_content:
         parts.append(f"## Scène\n{scene_content}")
 
-    # 3. Règles joueur
-    rules = activity.get("rules") or {}
-    if not isinstance(rules, dict):
-        log.warning("[build_system_prompt] activity.rules n'est pas un dict (%r) pour %r",
-                    type(rules).__name__, activity.get("_id", "?"))
-        rules = {}
+    # 3. Règles joueur (uniquement si une activité est fournie)
+    if activity is not None:
+        rules = activity.get("rules") or {}
+        if not isinstance(rules, dict):
+            log.warning("[build_system_prompt] activity.rules n'est pas un dict (%r) pour %r",
+                        type(rules).__name__, activity.get("_id", "?"))
+            rules = {}
 
-    player_rules = rules.get("players", "")
-    if player_rules:
-        parts.append(f"## Règles du jeu\n{player_rules}")
-    else:
-        log.warning("[build_system_prompt] rules.players absent ou vide pour l'activité %r",
-                    activity.get("_id", "?"))
+        player_rules = rules.get("players", "")
+        if player_rules:
+            parts.append(f"## Règles du jeu\n{player_rules}")
+        else:
+            log.warning("[build_system_prompt] rules.players absent ou vide pour l'activité %r",
+                        activity.get("_id", "?"))
 
     # 4. Impressions sur les autres (knowledge)
     if knowledge_entries:

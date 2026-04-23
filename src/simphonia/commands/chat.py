@@ -6,8 +6,14 @@ CHAT_BUS = "chat"
 
 
 @command(bus=CHAT_BUS, code="start", description="Ouvre une session de dialogue entre deux personnages")
-def start_command(from_char: str, to: str, say: str, human: bool = False) -> dict:
-    return chat_service.get().start(from_char, to, say, human)
+def start_command(
+    from_char: str,
+    to: str,
+    say: str,
+    human: bool = False,
+    scene_id: str | None = None,
+) -> dict:
+    return chat_service.get().start(from_char, to, say, human, scene_id)
 
 
 @command(bus=CHAT_BUS, code="reply", description="Poursuit une session de dialogue existante")

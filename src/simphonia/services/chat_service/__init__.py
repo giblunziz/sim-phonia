@@ -16,8 +16,19 @@ class ChatService(ABC):
     """Contrat minimal : démarrer, poursuivre et clore un dialogue."""
 
     @abstractmethod
-    def start(self, from_char: str, to: str, say: str, human: bool = False) -> dict:
+    def start(
+        self,
+        from_char: str,
+        to: str,
+        say: str,
+        human: bool = False,
+        scene_id: str | None = None,
+    ) -> dict:
         """Démarre une nouvelle session de dialogue.
+
+        `scene_id` optionnel — si fourni, la scène correspondante est chargée
+        depuis `activity_storage` et injectée dans le system prompt via
+        `context_builder.build_system_prompt`.
 
         Retourne `{"session_id": ..., "from_char": ..., "to": ..., "reply": None}`.
         """

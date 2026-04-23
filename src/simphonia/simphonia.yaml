@@ -5,7 +5,7 @@ providers:
     model: simphonia.v1:latest
 #    model: gemma4:26b
 #    model: gemma4:e4b
-    max_tokens: 4096
+    max_tokens: 8512
     temperature: 0.8
     keep_alive: 1h
   opus:
@@ -13,6 +13,13 @@ providers:
     api_key: ${ANTHROPIC_API_KEY}
     model: claude-opus-4-6
     max_tokens: 4096
+    temperature: 0.8
+    keep_alive: 1h
+  gemma4-original:
+    protocol: ollama
+    url: http://localhost:11434/api/chat
+    model: gemma4:26b
+    max_tokens: 8512
     temperature: 0.8
     keep_alive: 1h
 
@@ -49,3 +56,13 @@ services:
 
   chat_service:
     model: "gemma4"
+
+  tools_service:
+    strategy: mongodb_strategy
+    database_uri: ${MONGO_URI}
+    database_name: ${MONGO_DATABASE}
+    tasks_collection: tasks
+    registry_collection: task_collection
+    model: "gemma4-original"
+    output_dir: output
+    max_retries: 3            # retry par cellule si le provider renvoie une réponse vide

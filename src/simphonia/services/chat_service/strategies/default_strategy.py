@@ -14,9 +14,23 @@ from simphonia.core import default_registry
 from simphonia.core.errors import CharacterNotFound, InvalidParticipant, LLMError, SessionNotFound
 from simphonia.core.mcp import mcp_tool_definitions, mcp_tool_hints
 from simphonia.providers.base import LLMProvider, ToolExecutor
+from simphonia.services.activity_service.context_builder import build_system_prompt
 from simphonia.services.chat_service import ChatService
 from simphonia.services.chat_service.types import DialogueMessage, DialogueState
 from simphonia.services import memory_service
+
+
+_TALK_SCHEMA = (
+    'Ta réponse finale doit être UNIQUEMENT un objet JSON valide, sans texte avant ni après.\n'
+    'Format obligatoire :\n'
+    '{"talk": "Ta réponse complète en un seul bloc de texte."}\n\n'
+    'IMPORTANT :\n'
+    '- "talk" est une SEULE chaîne de caractères, PAS un tableau.\n'
+    '- Produis UNE SEULE réponse cohérente. PAS de variantes, PAS d\'alternatives.\n'
+    '- Reste en personnage. Réponds naturellement, comme dans une vraie conversation.\n\n'
+    'Champs futurs (non requis maintenant) : from, to, actions, mood, inner, '
+    'expected, noticed, body, memory'
+)
 
 
 class DefaultChatService(ChatService):
@@ -42,29 +56,48 @@ class DefaultChatService(ChatService):
         if name not in character_service.get().get_character_list():
             raise CharacterNotFound(name)
 
-    def _build_system_prompt(self, to_card: dict, from_char: str, human: bool, role: str) -> str:
-        fiche = json.dumps(to_card, ensure_ascii=False, indent=2)
+    def _build_system_prompt(
+        self,
+        to_card: dict,
+        to: str,
+        from_char: str,
+        human: bool,
+        role: str,
+        scene: dict,
+    ) -> str:
+        """Compose le system prompt via `activity_service.context_builder` pour
+        partager la même logique que l'`activity_engine` (scène + knowledge +
+        fiche perso). L'interlocuteur et le schéma JSON `{talk}` restent
+        propres au chat simple — ajoutés en suffixe.
+        """
+        from simphonia.services import character_storage
+
+        knowledge_entries = character_storage.get().list_knowledge(filter={"from": to})
+
+        body = build_system_prompt(
+            player=to,
+            instance=None,
+            activity=None,
+            scene=scene,
+            character=to_card,
+            knowledge_entries=knowledge_entries,
+            system_schemas=None,
+        )
+
+        memory_hint = mcp_tool_hints(role=role)
         interlocutor = (
             f"Tu parles avec un humain nommé {from_char}."
             if human
             else f"Tu parles avec le personnage {from_char}."
         )
-        # Hints narratifs composés depuis les @command(mcp=True, mcp_role=<role>, mcp_hint=...)
-        # et les `register_mcp_group(bus, <role>, intro, outro)` des modules commands/*.
-        memory_hint = mcp_tool_hints(role=role)
 
-        schema = (
-            'Ta réponse finale doit être UNIQUEMENT un objet JSON valide, sans texte avant ni après.\n'
-            'Format obligatoire :\n'
-            '{"talk": "Ta réponse complète en un seul bloc de texte."}\n\n'
-            'IMPORTANT :\n'
-            '- "talk" est une SEULE chaîne de caractères, PAS un tableau.\n'
-            '- Produis UNE SEULE réponse cohérente. PAS de variantes, PAS d\'alternatives.\n'
-            '- Reste en personnage. Réponds naturellement, comme dans une vraie conversation.\n\n'
-            'Champs futurs (non requis maintenant) : from, to, actions, mood, inner, '
-            'expected, noticed, body, memory'
-        )
-        return f"Tu es ce personnage :\n{fiche}\n\n{interlocutor}\n\n{memory_hint}\n\n{schema}"
+        parts = []
+        if memory_hint:
+            parts.append(memory_hint)
+        parts.append(body)
+        parts.append(interlocutor)
+        parts.append(_TALK_SCHEMA)
+        return "\n\n".join(parts)
 
     def _get_mcp_tools(self, role: str) -> list[dict]:
         """Tool definitions (format provider-agnostic) pour les commandes d'un rôle donné.
@@ -212,12 +245,27 @@ class DefaultChatService(ChatService):
     # Interface publique
     # ------------------------------------------------------------------
 
-    def start(self, from_char: str, to: str, say: str, human: bool = False) -> dict:
+    def start(
+        self,
+        from_char: str,
+        to: str,
+        say: str,
+        human: bool = False,
+        scene_id: str | None = None,
+    ) -> dict:
         """Démarre une nouvelle session de dialogue après validation des participants."""
-        from simphonia.services import character_service
+        from simphonia.services import activity_storage, character_service
 
         self._validate_character(from_char)
         self._validate_character(to)
+
+        scene: dict = {}
+        if scene_id:
+            resolved = activity_storage.get().get_scene(scene_id)
+            if resolved:
+                scene = resolved
+            else:
+                self._log.warning("[start] scène %r introuvable — ignorée", scene_id)
 
         session_id = str(uuid.uuid4())
         state = DialogueState(
@@ -225,6 +273,7 @@ class DefaultChatService(ChatService):
             participants=(from_char, to),
             history=[],
             provider_ref=self._provider_name,
+            scene=scene,
         )
         state.history.append(
             DialogueMessage(
@@ -247,7 +296,7 @@ class DefaultChatService(ChatService):
         # Générer la réponse de `to` via LLM (sauf si to est un humain — non géré MVP)
         to_card = character_service.get().get_character(to)
         to_role = character_service.get().get_type(to)
-        system_prompt = self._build_system_prompt(to_card, from_char, human, to_role)
+        system_prompt = self._build_system_prompt(to_card, to, from_char, human, to_role, state.scene)
         messages = self._build_messages(state.history, to, memorize_log=state.memorize_log.get(to))
         try:
             reply_text = self._call_llm(system_prompt, messages, from_char=to, state=state)
@@ -301,7 +350,7 @@ class DefaultChatService(ChatService):
         responder = state.participants[1] if from_char == state.participants[0] else state.participants[0]
         to_card = character_service.get().get_character(responder)
         to_role = character_service.get().get_type(responder)
-        system_prompt = self._build_system_prompt(to_card, from_char, human, to_role)
+        system_prompt = self._build_system_prompt(to_card, responder, from_char, human, to_role, state.scene)
         messages = self._build_messages(state.history, responder, memorize_log=state.memorize_log.get(responder))
         try:
             reply_text = self._call_llm(system_prompt, messages, from_char=responder, state=state)
@@ -334,7 +383,7 @@ class DefaultChatService(ChatService):
         try:
             speaker_card = character_service.get().get_character(speaker)
             speaker_role = character_service.get().get_type(speaker)
-            sp = self._build_system_prompt(speaker_card, from_char=other, human=False, role=speaker_role)
+            sp = self._build_system_prompt(speaker_card, speaker, from_char=other, human=False, role=speaker_role, scene=state.scene)
             msgs = self._build_messages(state.history, speaker, memorize_log=state.memorize_log.get(speaker))
             speaker_say = self._call_llm(sp, msgs, from_char=speaker, state=state)
         except LLMError as e:
@@ -355,7 +404,7 @@ class DefaultChatService(ChatService):
         try:
             other_card = character_service.get().get_character(other)
             other_role = character_service.get().get_type(other)
-            sp2 = self._build_system_prompt(other_card, from_char=speaker, human=False, role=other_role)
+            sp2 = self._build_system_prompt(other_card, other, from_char=speaker, human=False, role=other_role, scene=state.scene)
             msgs2 = self._build_messages(state.history, other)
             other_reply = self._call_llm(sp2, msgs2, from_char=other)
         except LLMError as e:

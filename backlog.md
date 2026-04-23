@@ -93,11 +93,110 @@ Aujourd'hui `▶ Lancer` depuis `StorageInstancesPanel` appelle `activity/run(in
 
 YAGNI V1. À réévaluer une fois les 3 modes MJ livrés et retour d'usage.
 
+### 🤖 Résolution dynamique du fine-tune Ollama via `character.type`
+
+Le même discriminant `character.type` qui filtre les tools MCP (livré 2026-04-22) pourrait piloter aussi la résolution du fine-tune LLM à utiliser.
+
+**Convention de nommage** : `{base_model}_{type}` (séparateur `_`). Ex : `simphonia_player`, `simphonia_psy`, `simphonia_npc`.
+
+**Découverte auto au boot** :
+
+```
+1. db.characters.aggregate([{$group: {_id: "$type"}}])  →  types réellement utilisés
+2. Pour chaque type, vérifier que `{base_model}_{type}` existe côté Ollama (GET /api/tags)
+3. Si présent  → resolver[type] = `{base_model}_{type}`
+   Si absent   → resolver[type] = default_model  (+ warning log)
+```
+
+**Config YAML imaginée** :
+
+```yaml
+services:
+  chat_service:
+    base_model: simphonia           # préfixe commun
+    default_model: simphonia_player # fallback si fine-tune spécifique absent
+```
+
+**Changement technique** : déplacer la résolution du provider de l'init statique (aujourd'hui `chat_service.init(model=...)` one-shot au boot) à chaque appel LLM via un helper `provider_registry.resolve_for(character_type)`.
+
+**Scope** : `chat_service`, `activity_engine`. Pas `tools_service` (l'atelier utilise un model fixe neutre, cf. `gemma4-original`).
+
+**Préalables** : aucun bloquant — `character.type` existe déjà, `provider_registry` aussi. Chantier self-contained, ~1 après-midi.
+
 ## FROZEN
 
 _(vide)_
 
 ## DONE
+
+### 2026-04-23 — 🛠️ `tools_service` — atelier one-shot piloté par LLM (port modernisé de `run_task.py`)
+
+Spec complète dans [`documents/tools_service.md`](./documents/tools_service.md). Plan T1→T9 livré.
+
+**Concept** : atelier de préparation de données hors scénario, hors session, hors bus applicatif. Double boucle `sources × subjects`, outputs `.txt` dans `./output/<task_slug>/<YYMMDD_HHMMSS>/`. MongoDB-first — fini les fichiers de vérité.
+
+**Back** :
+- `services/tools_service/` : ABC + factory + singleton + `MongoToolsService` (lecture `task_collection` avec `$project _id:1`, CRUD `tasks`, lecture schemaless des documents des collections exposables)
+- `services/tools_service/builder.py` : `build_tools_system_prompt(source, subject?, schema?)` — format minimaliste SOURCE / SUBJECT / schéma, déconnecté de `context_builder` (trop riche pour l'atelier)
+- `services/tools_service/runner.py` : moteur thread background, progress state in-process, `skip_self`, best-effort erreurs par cellule, `_run.meta.json` en fin de run
+- `commands/tools.py` : 9 commandes bus `tools/*` (aucune MCP — atelier non accessible aux LLM incarnés)
+- `simphonia.yaml` : section `services.tools_service` (model, collections, output_dir)
+- `bootstrap.py` : `tools_service.init(...)` après les autres services
+
+**Front** :
+- `api/simphonia.js` : 9 endpoints (`toolsListCollections`, `toolsListIds`, `toolsGetDocument`, `toolsTasksList/Get/Put/Delete`, `toolsRun`, `toolsStatus`)
+- `components/tools/ToolsPanel.jsx` : task top (dropdown + slug + prompt + temperature + Save) + 2 colonnes source/subject avec checkbox-listes + Refresh + dropdown schéma + checkbox `Skip self` + Run + progress bar + cells log
+- `components/Sidebar.jsx` : rubrique *Atelier* → *Tools*
+- `App.jsx` : route vers `ToolsPanel`
+- `index.css` : styles `.tools-id-list`, `.tools-progress`, `.tools-cells`
+
+**Tests** : 7 TU verts sur `builder.py` (`tests/test_tools_builder.py`) — cas source seul, source+subject, cohérence subject_id/subject_doc, schéma payload dict/str, ordre SOURCE>SUBJECT>schéma, absence de bloc schéma.
+
+**Propriétés** :
+- Fallback safe : fiche absente → erreur cellule ciblée, run continue
+- `skip_self` par défaut — filtre `source_id == subject_id`, décochable
+- Aucun tool MCP injecté côté LLM (1 seul aller-retour, pas de boucle tool-use)
+- Documents source/subject injectés tels quels (schemaless, zéro filtre PRIVATE/PUBLIC)
+- Polling via `tools/status` toutes les 1s — pas de SSE ni bus scénario
+- Runs en mémoire, pas de persistance cross-process
+
+**Validation E2E** :
+- Phase 1 presentations : `./output/presentation/20260422_235955/`
+- Phase 2 cross-analyse : `./output/cross-analyse/20260423_000452/` (incluant `diane_vera.txt`)
+
+**Validation utilisateur** : OK 2026-04-23.
+
+---
+
+### 2026-04-23 — 💬 chat simple : scène optionnelle + composition via `context_builder`
+
+Le StartScreen du chat (outil de test) devient cohérent avec le pipeline de l'`activity_engine` : même fonction de composition du system prompt, mêmes sources de vérité (scène + knowledge + fiche).
+
+**Back** :
+- `context_builder.build_system_prompt` — `instance` / `activity` / `scene` tolèrent `None`. Si `activity is None`, la section "Règles du jeu" est entièrement omise (plus de warning `rules.players absent`). Usage hors activity_engine officialisé.
+- `chat_service/types.py` — `DialogueState.scene: dict` ajouté, résolu 1 seule fois au `start`.
+- `chat_service/strategies/default_strategy.py` :
+  - `_build_system_prompt` délègue à `context_builder.build_system_prompt(player=to, activity=None, scene=state.scene, character=to_card, knowledge_entries=<list_knowledge(from=to)>)`
+  - Knowledge chargés à chaque tour via `character_storage.get().list_knowledge(filter={"from": responder})` — continuité avec les `memorize` du jeu principal
+  - Suffixé par `interlocutor` + `_TALK_SCHEMA` hardcodé (schéma `{talk}` propre au chat simple, YAGNI system_schemas)
+  - `start(..., scene_id=None)` : résout via `activity_storage.get().get_scene(scene_id)` + stocke dans `state.scene` ; `reply` / `auto_reply` utilisent `state.scene`
+- `chat_service/__init__.py` — ABC `start` avec `scene_id`
+- `commands/chat.py` — `start_command` avec `scene_id`
+
+**Front** :
+- `api/simphonia.js::chatStart(..., sceneId=null)`
+- `StartScreen.jsx` — select scène optionnel peuplé via `sceneList()`, option "— aucune —" en tête, fail-silent si fetch KO
+
+**Propriétés** :
+- Chat simple sans scène → comportement identique à avant (pas de régression)
+- Chat simple avec scène → section `## Scène` + knowledge + fiche dans le system prompt, interlocutor + schéma `{talk}` en suffixe
+- Un personnage gagne en continuité de persona entre activités et chat simple (mêmes knowledge injectés)
+- Le schéma `{talk}` reste hardcodé côté chat_service (YAGNI refacto vers schemas activity_storage)
+- Le system prompt en saisie a été écarté (YAGNI)
+
+**Validation utilisateur** : OK 2026-04-23.
+
+---
 
 ### 2026-04-22 — 🎭 `character.type` (player|npc|human) + filtre MCP dynamique
 

@@ -98,8 +98,8 @@ export async function memoryRecall(fromChar, context, about) {
   return dispatch('memory', 'recall', payload);
 }
 
-export async function chatStart(fromChar, to, say, human) {
-  return dispatch('chat', 'start', { from_char: fromChar, to, say, human });
+export async function chatStart(fromChar, to, say, human, sceneId = null) {
+  return dispatch('chat', 'start', { from_char: fromChar, to, say, human, scene_id: sceneId });
 }
 
 export async function chatReply(sessionId, fromChar, say, human) {
@@ -136,3 +136,18 @@ export function openActivityStream(sessionId) {
 // ── mj (orchestration step-by-step) ───────────────────────────────────────────
 
 export const mjNextTurn = (session_id) => dispatch('mj', 'next_turn', { session_id });
+
+// ── tools (atelier one-shot) ──────────────────────────────────────────────────
+
+export const toolsListCollections = ()                           => dispatch('tools', 'collections.list');
+export const toolsListIds         = (collection_name)            => dispatch('tools', 'ids.list', { collection_name });
+export const toolsGetDocument     = (collection_name, _id)       => dispatch('tools', 'get_document', { collection_name, _id });
+
+export const toolsTasksList   = ()                           => dispatch('tools', 'tasks.list');
+export const toolsTasksGet    = (slug)                       => dispatch('tools', 'tasks.get',    { slug });
+export const toolsTasksPut    = (slug, prompt, temperature)  => dispatch('tools', 'tasks.put',    { slug, prompt, temperature });
+export const toolsTasksDelete = (slug)                       => dispatch('tools', 'tasks.delete', { slug });
+
+export const toolsRun    = (payload) => dispatch('tools', 'run', payload);
+export const toolsStatus = (run_id)   => dispatch('tools', 'status', { run_id });
+export const toolsCancel = (run_id)   => dispatch('tools', 'cancel', { run_id });

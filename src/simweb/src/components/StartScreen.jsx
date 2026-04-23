@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { listCharacters, chatStart } from '../api/simphonia.js';
+import { listCharacters, chatStart, sceneList } from '../api/simphonia.js';
 
 export default function StartScreen({ onStart }) {
   const [characters, setCharacters] = useState([]);
+  const [scenes, setScenes] = useState([]);
   const [fromChar, setFromChar] = useState('');
   const [toChar, setToChar] = useState('');
+  const [sceneId, setSceneId] = useState('');
   const [say, setSay] = useState('');
   const [human, setHuman] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,13 +22,19 @@ export default function StartScreen({ onStart }) {
       .catch(() => setError('Impossible de charger les personnages. Le serveur est-il démarré ?'));
   }, []);
 
+  useEffect(() => {
+    sceneList()
+      .then((list) => setScenes(Array.isArray(list) ? list : []))
+      .catch(() => { /* scène optionnelle — silence si KO */ });
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!say.trim()) return;
     setError(null);
     setLoading(true);
     try {
-      const result = await chatStart(fromChar, toChar, say.trim(), human);
+      const result = await chatStart(fromChar, toChar, say.trim(), human, sceneId || null);
       onStart({ ...result, fromChar, toChar, say: say.trim(), human });
     } catch (err) {
       setError(err.message);
@@ -71,6 +79,23 @@ export default function StartScreen({ onStart }) {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="scene">Scène (optionnelle)</label>
+          <select
+            id="scene"
+            value={sceneId}
+            onChange={(e) => setSceneId(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">— aucune —</option>
+            {scenes.map((s) => (
+              <option key={s._id} value={s._id}>
+                {s._id}{s.description ? ` — ${s.description}` : ''}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="field">

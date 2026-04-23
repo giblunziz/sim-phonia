@@ -11,6 +11,7 @@ import StorageSchemasPanel from './components/storage/StorageSchemasPanel.jsx';
 import StorageScenesPanel from './components/storage/StorageScenesPanel.jsx';
 import StorageInstancesPanel from './components/storage/StorageInstancesPanel.jsx';
 import ActivityDashboardPanel from './components/activity/ActivityDashboardPanel.jsx';
+import ToolsPanel from './components/tools/ToolsPanel.jsx';
 
 export default function App() {
   const [session, setSession]               = useState(null);
@@ -53,6 +54,8 @@ export default function App() {
           initialSession={activitySession}
           onSessionClear={() => setActivitySession(null)}
         />;
+      case 'tools':
+        return <ToolsPanel />;
       default:
         return null;
     }

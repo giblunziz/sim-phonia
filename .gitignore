@@ -8,6 +8,7 @@
 .working/
 data/
 logs/
+output/
 
 # Python
 __pycache__/

@@ -16,6 +16,9 @@ class DialogueState:
     history: list[DialogueMessage] = field(default_factory=list)
     provider_ref: str = ""
     created_at: datetime = field(default_factory=datetime.utcnow)
+    # Scène optionnelle (résolue au start via activity_storage.get_scene) — dict
+    # vide si aucune scène n'a été sélectionnée côté UI.
+    scene: dict = field(default_factory=dict)
     # Trace par speaker des markdowns de confirmation `memorize` — ré-injectée
     # par `_build_messages` à chaque tour pour que le LLM reste conscient de ce
     # qu'il a récemment ancré en mémoire (cohérence narrative).
