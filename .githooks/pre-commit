@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# pre-commit — lance la suite pytest avant chaque commit.
+# Si un TU échoue, le commit est annulé (les fichiers restent staged).
+#
+# Bypass d'urgence : git commit --no-verify (à éviter — cf. CLAUDE.md global).
+#
+# Activation pour ce repo (à faire une fois après clone) :
+#   git config core.hooksPath .githooks
+
+set -e
+
+# Toujours s'exécuter depuis la racine du repo (CWD imprévisible si commit
+# depuis un sous-dossier ou un IDE).
+cd "$(git rev-parse --show-toplevel)"
+
+echo "▶ pre-commit : pytest tests/"
+python -m pytest tests/ --quiet
+
+echo "✓ tests OK — commit autorisé"
