@@ -12,7 +12,7 @@ from datetime import datetime
 
 from simphonia.core import default_registry
 from simphonia.core.errors import CharacterNotFound, InvalidParticipant, LLMError, SessionNotFound
-from simphonia.core.mcp import mcp_tool_definitions, mcp_tool_hints
+from simphonia.core.mcp import mcp_tool_definitions, mcp_tool_hints, mcp_tool_reminders
 from simphonia.providers.base import LLMProvider, ToolExecutor
 from simphonia.services.activity_service.context_builder import build_system_prompt
 from simphonia.services.chat_service import ChatService
@@ -152,6 +152,7 @@ class DefaultChatService(ChatService):
         history: list[DialogueMessage],
         to_speaker: str,
         memorize_log: list[str] | None = None,
+        role: str = "player",
     ) -> list[dict]:
         messages = []
         # Ré-injection des mémorisations récentes du speaker (cohérence narrative).
@@ -163,6 +164,18 @@ class DefaultChatService(ChatService):
                 messages.append({"role": "assistant", "content": msg.content})
             else:
                 messages.append({"role": "user", "content": f"[{msg.speaker}] {msg.content}"})
+
+        # Reminder MCP — suffix du dernier user, jamais persisté (cf. context_builder).
+        reminder = mcp_tool_reminders(role)
+        if reminder:
+            for i in range(len(messages) - 1, -1, -1):
+                if messages[i].get("role") == "user":
+                    messages[i] = {
+                        **messages[i],
+                        "content": messages[i]["content"] + f"\n\n---\n{reminder}",
+                    }
+                    break
+
         return messages
 
     @staticmethod
@@ -314,7 +327,7 @@ class DefaultChatService(ChatService):
         to_card = character_service.get().get_character(to)
         to_role = character_service.get().get_type(to)
         system_prompt = self._build_system_prompt(to_card, to, from_char, human, to_role, state.scene)
-        messages = self._build_messages(state.history, to, memorize_log=state.memorize_log.get(to))
+        messages = self._build_messages(state.history, to, memorize_log=state.memorize_log.get(to), role=to_role)
         try:
             reply_text = self._call_llm(system_prompt, messages, from_char=to, state=state)
             state.history.append(DialogueMessage(
@@ -368,7 +381,7 @@ class DefaultChatService(ChatService):
         to_card = character_service.get().get_character(responder)
         to_role = character_service.get().get_type(responder)
         system_prompt = self._build_system_prompt(to_card, responder, from_char, human, to_role, state.scene)
-        messages = self._build_messages(state.history, responder, memorize_log=state.memorize_log.get(responder))
+        messages = self._build_messages(state.history, responder, memorize_log=state.memorize_log.get(responder), role=to_role)
         try:
             reply_text = self._call_llm(system_prompt, messages, from_char=responder, state=state)
             state.history.append(DialogueMessage(
@@ -401,7 +414,7 @@ class DefaultChatService(ChatService):
             speaker_card = character_service.get().get_character(speaker)
             speaker_role = character_service.get().get_type(speaker)
             sp = self._build_system_prompt(speaker_card, speaker, from_char=other, human=False, role=speaker_role, scene=state.scene)
-            msgs = self._build_messages(state.history, speaker, memorize_log=state.memorize_log.get(speaker))
+            msgs = self._build_messages(state.history, speaker, memorize_log=state.memorize_log.get(speaker), role=speaker_role)
             speaker_say = self._call_llm(sp, msgs, from_char=speaker, state=state)
         except LLMError as e:
             self._log.error("[auto_reply] LLM error générant %r : %s", speaker, e)
@@ -422,7 +435,7 @@ class DefaultChatService(ChatService):
             other_card = character_service.get().get_character(other)
             other_role = character_service.get().get_type(other)
             sp2 = self._build_system_prompt(other_card, other, from_char=speaker, human=False, role=other_role, scene=state.scene)
-            msgs2 = self._build_messages(state.history, other)
+            msgs2 = self._build_messages(state.history, other, role=other_role)
             other_reply = self._call_llm(sp2, msgs2, from_char=other)
         except LLMError as e:
             state.history.pop()

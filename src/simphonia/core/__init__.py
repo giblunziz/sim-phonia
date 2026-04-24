@@ -16,6 +16,7 @@ from simphonia.core.mcp import (
     list_mcp_commands,
     mcp_tool_definitions,
     mcp_tool_hints,
+    mcp_tool_reminders,
     register_mcp_group,
     to_tool_definitions,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "list_mcp_commands",
     "mcp_tool_definitions",
     "mcp_tool_hints",
+    "mcp_tool_reminders",
     "register_mcp_group",
     "to_tool_definitions",
 ]

@@ -3,7 +3,7 @@ import json
 import logging
 from collections import defaultdict
 
-from simphonia.core.mcp import mcp_tool_definitions
+from simphonia.core.mcp import mcp_tool_definitions, mcp_tool_reminders
 from simphonia.utils.parser import parse_llm_json
 
 log = logging.getLogger("simphonia.activity.context")
@@ -184,6 +184,7 @@ def build_messages(
     mj_instruction: dict | None = None,
     amorce: str | None = None,
     memorize_log: list[str] | None = None,
+    role: str = "player",
 ) -> list[dict]:
     """Assemble la liste de messages pour un joueur à un tour donné.
 
@@ -194,6 +195,9 @@ def build_messages(
       4. Mémorisations récentes du joueur (cohérence narrative memorize)
       5. Historique des échanges publics
       6. Instruction MJ (déjà résolue par le caller)
+      7. Reminder MCP — suffixé au dernier message user, jamais persisté
+         (régénéré à chaque tour pour combattre la dilution du system prompt
+         sur conversations longues).
     """
     messages = []
 
@@ -237,5 +241,18 @@ def build_messages(
             or json.dumps(mj_instruction, ensure_ascii=False)
         )
         messages.append({"role": "user", "content": content})
+
+    # 6. Reminder MCP — suffixé au dernier message user (haute attention LLM,
+    # placeholders ${commands} résolus). Jamais ré-injecté dans l'historique
+    # persisté : régénéré à chaque tour à partir des mcp groups vivants.
+    reminder = mcp_tool_reminders(role)
+    if reminder:
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                messages[i] = {
+                    **messages[i],
+                    "content": messages[i]["content"] + f"\n\n---\n{reminder}",
+                }
+                break
 
     return messages

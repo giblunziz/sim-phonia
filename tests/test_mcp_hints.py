@@ -11,6 +11,7 @@ from simphonia.core.mcp import (
     _reset_mcp_groups_for_tests,
     get_mcp_group,
     mcp_tool_hints,
+    mcp_tool_reminders,
     register_mcp_group,
 )
 from simphonia.core.registry import BusRegistry
@@ -157,3 +158,116 @@ class TestMcpToolHints:
         # Structure de chaque section
         sections = out.split("\n\n---\n\n")
         assert len(sections) == 2
+
+
+# ---------------------------------------------------------------------------
+#  McpGroup.reminder + mcp_tool_reminders — placeholder ${commands}
+# ---------------------------------------------------------------------------
+
+class TestMcpGroupReminderField:
+
+    def test_default_reminder_is_none(self):
+        register_mcp_group(bus="memory", role="player", intro="i", outro="o")
+        group = get_mcp_group("memory", "player")
+        assert group.reminder is None
+
+    def test_register_with_reminder(self):
+        register_mcp_group(
+            bus="memory", role="player",
+            intro="i", outro="o",
+            reminder="N'oublie pas tes outils ${commands}",
+        )
+        group = get_mcp_group("memory", "player")
+        assert group.reminder == "N'oublie pas tes outils ${commands}"
+
+
+class TestMcpToolReminders:
+
+    def test_no_groups_returns_empty(self):
+        reg = BusRegistry()
+        assert mcp_tool_reminders(role="player", registry=reg) == ""
+
+    def test_group_without_reminder_skipped(self):
+        """Si le groupe n'a pas de reminder, rien n'est retourné même si commandes présentes."""
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall", "player", "h"))
+        register_mcp_group(bus="memory", role="player", intro="I", outro="O")  # pas de reminder
+        assert mcp_tool_reminders(role="player", registry=reg) == ""
+
+    def test_placeholder_commands_resolved_single(self):
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall", "player"))
+        register_mcp_group(
+            bus="memory", role="player",
+            reminder="Pense à ${commands} pour tes souvenirs",
+        )
+        out = mcp_tool_reminders(role="player", registry=reg)
+        assert out == "Pense à `recall` pour tes souvenirs"
+
+    def test_placeholder_commands_resolved_multiple(self):
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall",   "player"))
+        reg.get_or_create("memory").register(_make_cmd("memory", "memorize", "player"))
+        register_mcp_group(
+            bus="memory", role="player",
+            reminder="Tu disposes de ${commands} pour gérer ta mémoire",
+        )
+        out = mcp_tool_reminders(role="player", registry=reg)
+        assert out == "Tu disposes de `recall`, `memorize` pour gérer ta mémoire"
+
+    def test_reminder_without_placeholder_passes_through(self):
+        """Reminder statique sans ${commands} : conservé tel quel."""
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall", "player"))
+        register_mcp_group(
+            bus="memory", role="player",
+            reminder="Texte fixe sans variable",
+        )
+        out = mcp_tool_reminders(role="player", registry=reg)
+        assert out == "Texte fixe sans variable"
+
+    def test_unknown_placeholder_left_untouched(self):
+        """safe_substitute : un placeholder inconnu ne fait pas planter, juste ignoré."""
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall", "player"))
+        register_mcp_group(
+            bus="memory", role="player",
+            reminder="Tools=${commands}, weird=${nope}",
+        )
+        out = mcp_tool_reminders(role="player", registry=reg)
+        assert out == "Tools=`recall`, weird=${nope}"
+
+    def test_filter_by_role(self):
+        """Seul le reminder du role demandé est composé."""
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall", "player"))
+        reg.get_or_create("activity").register(_make_cmd("activity", "give_turn", "mj"))
+        register_mcp_group(bus="memory",   role="player", reminder="P=${commands}")
+        register_mcp_group(bus="activity", role="mj",     reminder="M=${commands}")
+
+        out_p = mcp_tool_reminders(role="player", registry=reg)
+        out_m = mcp_tool_reminders(role="mj",     registry=reg)
+        assert out_p == "P=`recall`"
+        assert out_m == "M=`give_turn`"
+
+    def test_multi_group_separated(self):
+        """Plusieurs groupes du même role : reminders concaténés avec \\n\\n---\\n\\n."""
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "recall", "player"))
+        reg.get_or_create("shadow").register(_make_cmd("shadow", "peek",   "player"))
+        register_mcp_group(bus="memory", role="player", reminder="MEM=${commands}")
+        register_mcp_group(bus="shadow", role="player", reminder="SHD=${commands}")
+
+        out = mcp_tool_reminders(role="player", registry=reg)
+        sections = out.split("\n\n---\n\n")
+        assert set(sections) == {"MEM=`recall`", "SHD=`peek`"}
+
+    def test_command_order_preserved(self):
+        """L'ordre d'enregistrement des commandes est respecté dans la résolution."""
+        reg = BusRegistry()
+        reg.get_or_create("memory").register(_make_cmd("memory", "zeta",  "player"))
+        reg.get_or_create("memory").register(_make_cmd("memory", "alpha", "player"))
+        register_mcp_group(bus="memory", role="player", reminder="${commands}")
+        out = mcp_tool_reminders(role="player", registry=reg)
+        # zeta avant alpha (ordre d'enregistrement, pas alphabétique)
+        assert out == "`zeta`, `alpha`"

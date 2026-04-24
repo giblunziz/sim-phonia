@@ -3,7 +3,7 @@ from simphonia.services import memory_service
 
 MEMORY_BUS = "memory"
 
-MEMORIZE_CATEGORIES = ["perceived_traits", "assumptions", "approach", "watchouts", "presentation"]
+MEMORIZE_CATEGORIES = ["perceived_traits", "assumptions", "approach", "watchouts", "presentation", "memory"]
 
 
 # ─ Groupe MCP narratif pour les tools mémoire côté joueur ─────────────────
@@ -18,6 +18,10 @@ register_mcp_group(
         "pas systématiquement, mais quand quelque chose te le rappelle :"
     ),
     outro="Si rien ne te déclenche, ne cherche pas. Vis le moment.",
+    reminder=(
+        "Pense à tes outils ${commands} pour gérer ta mémoire — "
+        "ne les oublie pas si quelque chose te marque ou te revient."
+    ),
 )
 
 
@@ -48,7 +52,7 @@ def resync_command() -> dict:
         "properties": {
             "about": {
                 "type": "string",
-                "description": "Le prénom de la personne dont tu veux te souvenir",
+                "description": "Le prénom de la personne associé à ton souvenir",
             },
             "context": {
                 "type": "string",
@@ -104,8 +108,7 @@ def recall_command(
                         "about": {
                             "type": "string",
                             "description": (
-                                "Le prénom d'un participant. Utilise ton propre prénom "
-                                "(ou `self`) pour une note réflexive sur toi-même."
+                                "Le prénom d'un participant ou ton propre prénom pour une note réflexive sur toi-même."
                             ),
                         },
                         "category": {
@@ -116,7 +119,8 @@ def recall_command(
                                 "assumptions : hypothèses que tu formules à son sujet. "
                                 "approach : façon de l'aborder qui fonctionne (ou pas). "
                                 "watchouts : signaux d'alerte / vigilance."
-                                "presentation: a chaque nouvelle rencontre, décrit  la personne en détail"
+                                "presentation: a chaque nouvelle rencontre, décrit  la personne en détail."
+                                "memory: pour enregistrer tes propres souvenir"
                             ),
                         },
                         "value": {

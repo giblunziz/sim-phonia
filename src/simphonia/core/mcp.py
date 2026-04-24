@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from string import Template
 
 from simphonia.core.command import Command
 from simphonia.core.registry import BusRegistry, default_registry
@@ -72,18 +73,32 @@ def mcp_tool_definitions(
 
 @dataclass(frozen=True, slots=True)
 class McpGroup:
-    """Bloc narratif associé à un `(bus, role)` pour la composition du prompt."""
-    bus:   str
-    role:  str
-    intro: str = ""
-    outro: str = ""
+    """Bloc narratif associé à un `(bus, role)` pour la composition du prompt.
+
+    `reminder` : texte court ré-injecté à chaque tour via `mcp_tool_reminders`,
+    placé en suffixe du user prompt (haute attention LLM). Supporte le placeholder
+    Spring-style `${commands}` qui sera résolu en liste markdown des codes de
+    commandes du groupe. None = pas de reminder pour ce groupe.
+    """
+    bus:      str
+    role:     str
+    intro:    str = ""
+    outro:    str = ""
+    reminder: str | None = None
 
 
 _mcp_groups: dict[tuple[str, str], McpGroup] = {}
 
 
-def register_mcp_group(*, bus: str, role: str, intro: str = "", outro: str = "") -> None:
-    """Enregistre l'intro/outro narrative pour le groupe `(bus, role)`.
+def register_mcp_group(
+    *,
+    bus: str,
+    role: str,
+    intro: str = "",
+    outro: str = "",
+    reminder: str | None = None,
+) -> None:
+    """Enregistre l'intro/outro/reminder narratif pour le groupe `(bus, role)`.
 
     Idempotent par design — un second appel **écrase** (avec warning log) ;
     utile en dev/tests. Appeler en top-level dans le module `commands/<bus>.py`
@@ -92,7 +107,10 @@ def register_mcp_group(*, bus: str, role: str, intro: str = "", outro: str = "")
     key = (bus, role)
     if key in _mcp_groups:
         log.warning("register_mcp_group: groupe %s déjà enregistré — écrasement", key)
-    _mcp_groups[key] = McpGroup(bus=bus, role=role, intro=intro, outro=outro)
+    _mcp_groups[key] = McpGroup(
+        bus=bus, role=role,
+        intro=intro, outro=outro, reminder=reminder,
+    )
 
 
 def get_mcp_group(bus: str, role: str) -> McpGroup | None:
@@ -138,5 +156,38 @@ def mcp_tool_hints(role: str, registry: BusRegistry | None = None) -> str:
             parts.append(group.outro)
         if parts:
             sections.append("\n\n".join(parts))
+
+    return "\n\n---\n\n".join(sections)
+
+
+def mcp_tool_reminders(role: str, registry: BusRegistry | None = None) -> str:
+    """Compose les reminders MCP pour un rôle donné, avec résolution des placeholders.
+
+    Pour chaque groupe `(bus, role)` qui déclare un `reminder`, le texte est
+    composé en remplaçant les placeholders Spring-style :
+
+    - `${commands}` → liste markdown des codes de commandes mcp=True du groupe,
+      ordre de découverte, séparées par `, ` (ex: `` `recall`, `memorize` ``)
+
+    Les reminders de différents groupes sont concaténés avec `\\n\\n---\\n\\n`
+    (même séparateur que `mcp_tool_hints`). Retourne une chaîne vide si aucun
+    groupe n'a de reminder enregistré pour ce rôle.
+
+    Le résultat est destiné à être suffixé au dernier user prompt — pas à être
+    injecté dans l'historique persisté (sinon accumulation tour après tour).
+    """
+    commands = list_mcp_commands(registry, role)
+    by_bus: dict[str, list[Command]] = defaultdict(list)
+    for cmd in commands:
+        by_bus[cmd.bus_name].append(cmd)
+
+    sections: list[str] = []
+    for bus, cmds in by_bus.items():
+        group = get_mcp_group(bus, role)
+        if not group or not group.reminder:
+            continue
+        commands_md = ", ".join(f"`{c.code}`" for c in cmds)
+        text = Template(group.reminder).safe_substitute(commands=commands_md)
+        sections.append(text)
 
     return "\n\n---\n\n".join(sections)

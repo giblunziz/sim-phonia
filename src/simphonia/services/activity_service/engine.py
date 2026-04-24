@@ -304,6 +304,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
         mj_instruction=mj_instruction,
         amorce=None,
         memorize_log=session.memorize_log.get(slug),
+        role=role,
     )
     has_schema = bool(session.system_schemas)
     if not messages:

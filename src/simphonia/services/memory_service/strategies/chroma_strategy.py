@@ -24,9 +24,6 @@ log_chroma = logging.getLogger("simphonia.chromadb")
 class ChromaMemoryService(MemoryService):
     """RAG contextuel — vector store local ChromaDB."""
 
-    # Catégories autorisées pour memorize (figées — backlog H1)
-    _ALLOWED_CATEGORIES = frozenset({"perceived_traits", "assumptions", "approach", "watchouts"})
-
     def __init__(
         self,
         load_factor: float = 1.0,
@@ -189,21 +186,9 @@ class ChromaMemoryService(MemoryService):
             category  = (note.get("category") or "").strip()
             value     = (note.get("value") or "").strip()
 
-            # Validation minimale
-            if not raw_about or not category or not value:
-                details.append({
-                    "about": raw_about, "category": category,
-                    "status": "skipped", "reason": "empty_field",
-                })
-                skipped += 1
-                continue
-            if category not in self._ALLOWED_CATEGORIES:
-                details.append({
-                    "about": raw_about, "category": category,
-                    "status": "skipped", "reason": "invalid_category",
-                })
-                skipped += 1
-                continue
+            # Aucune validation côté serveur — la commande RPC `memory/memorize`
+            # porte les contraintes (JSONSchema mcp_params : `required` + `enum`).
+            # Tout passe par elle, donc on fait confiance au payload reçu.
 
             # Résolution about (self / from_char / autre)
             if raw_about.lower() == "self":
