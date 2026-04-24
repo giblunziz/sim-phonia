@@ -29,6 +29,13 @@ const SECTIONS = [
     items: [{ id: 'tools', label: 'Tools' }],
   },
   {
+    id: 'tobias',
+    label: 'Tobias',
+    items: [
+      { id: 'tobias-subconscient', label: 'Subconscient' },
+    ],
+  },
+  {
     id: 'admin',
     label: 'Administration',
     items: [
@@ -39,7 +46,7 @@ const SECTIONS = [
 ];
 
 export default function Sidebar({ open, activePanel, onNavigate, onToggle }) {
-  const [expanded, setExpanded] = useState({ chat: true, jeu: true, admin: true, storage: true, atelier: true });
+  const [expanded, setExpanded] = useState({ chat: true, jeu: true, admin: true, storage: true, atelier: true, tobias: true });
 
   const toggleSection = (id) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));

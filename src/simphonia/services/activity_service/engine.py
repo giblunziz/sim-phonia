@@ -170,6 +170,23 @@ def _publish_sse(session_id: str, event: dict) -> None:
         log.warning("[sse] publish échoué : %s", exc)
 
 
+def _publish_messages(bus_origin: str, from_char: str, payload: dict) -> None:
+    """Best-effort fan-out vers le bus `messages` (cf. documents/shadow_storage.md).
+
+    Fire-and-forget : le retour n'est pas exploité, les exceptions sont loguées
+    mais n'impactent pas le flux du tour.
+    """
+    try:
+        from simphonia.core import default_registry
+        default_registry().get("messages").dispatch("published", {
+            "bus_origin": bus_origin,
+            "from_char":  from_char,
+            "payload":    payload,
+        })
+    except Exception as exc:
+        log.warning("[messages] fan-out échoué : %s", exc)
+
+
 def _notify_mj_session_start(session: SessionState) -> None:
     """Best-effort — un hook MJ qui plante ne doit pas bloquer le flux du run."""
     if session.mj_service is None:
@@ -338,6 +355,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
     session.exchange_history.append(exchange)
     session.instance.setdefault("exchanges", []).append(exchange)
     _persist(session)
+    _publish_messages("activity", slug, exchange)
 
     log.info("[give_turn] %r round=%d — public=%s", slug, session.round, exchange["public"])
 

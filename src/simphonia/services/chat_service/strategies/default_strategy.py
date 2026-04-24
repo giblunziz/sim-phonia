@@ -203,6 +203,22 @@ class DefaultChatService(ChatService):
         except Exception as exc:
             self._log.warning("[sse] publish échoué : %s", exc)
 
+    def _publish_messages(self, from_char: str | None, data: dict) -> None:
+        """Best-effort fan-out vers le bus `messages` (cf. documents/shadow_storage.md).
+
+        Fire-and-forget : alimente notamment le shadow_storage. N'impacte ni le
+        retour de _call_llm ni le flux du tour."""
+        if not from_char or not isinstance(data, dict):
+            return
+        try:
+            default_registry().get("messages").dispatch("published", {
+                "bus_origin": "chat",
+                "from_char":  from_char,
+                "payload":    data,
+            })
+        except Exception as exc:
+            self._log.warning("[messages] fan-out échoué : %s", exc)
+
     def _call_llm(
         self,
         system_prompt: str,
@@ -223,6 +239,7 @@ class DefaultChatService(ChatService):
             raise LLMError("Le provider LLM n'a retourné aucune réponse")
         try:
             data = json.loads(self._strip_markdown_fences(reply_text))
+            self._publish_messages(from_char, data)
             talk = data.get("talk")
             if talk is None:
                 self._log.warning("Champ 'talk' absent dans la réponse JSON — fallback texte brut")

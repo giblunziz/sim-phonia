@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import logging
+from collections.abc import Callable
 from typing import Any
 
 from simphonia.core.cascade import Cascade, CascadePosition
 from simphonia.core.command import Command
 from simphonia.core.errors import CommandNotFound, DispatchError, DuplicateCascade, DuplicateCommand
+
+log = logging.getLogger(__name__)
+
+BusListener = Callable[[dict[str, Any]], None]
 
 
 class Bus:
@@ -15,6 +21,8 @@ class Bus:
         # Clé : (code, position) → list[Cascade] triée par (priority, discovery_order).
         self._cascades: dict[tuple[str, CascadePosition], list[Cascade]] = {}
         self._cascade_counter: int = 0
+        # Listeners observer-pattern : notifiés après chaque dispatch (best-effort, isolés).
+        self._listeners: list[BusListener] = []
 
     # ------------------------------------------------------------------
     # Commands
@@ -37,11 +45,43 @@ class Bus:
     def dispatch(self, code: str, payload: dict[str, Any] | None = None) -> Any:
         cmd = self.get(code)
         try:
-            return cmd.callback(**(payload or {}))
+            result = cmd.callback(**(payload or {}))
         except (CommandNotFound, DispatchError):
             raise
         except Exception as exc:
             raise DispatchError(self.name, code, exc) from exc
+
+        self._notify_listeners(payload or {})
+        return result
+
+    # ------------------------------------------------------------------
+    # Listeners (observer pattern)
+    # ------------------------------------------------------------------
+
+    def subscribe(self, listener: BusListener) -> None:
+        """Enregistre un listener notifié après chaque dispatch sur ce bus.
+
+        Le listener reçoit uniquement le payload du dispatch (pas de code, pas
+        de result). Best-effort : exceptions logguées, n'impactent ni le retour
+        du dispatch ni les autres listeners. Synchrone : un listener lent
+        ralentit l'appelant — à ne jamais oublier.
+        """
+        self._listeners.append(listener)
+
+    def listeners(self) -> list[BusListener]:
+        """Retourne un snapshot de la liste des listeners (pour tests/debug)."""
+        return list(self._listeners)
+
+    def _notify_listeners(self, payload: dict[str, Any]) -> None:
+        for listener in self._listeners:
+            try:
+                listener(payload)
+            except Exception as exc:
+                fn_name = getattr(listener, "__qualname__", repr(listener))
+                log.warning(
+                    "[bus.%s] listener %s a échoué : %s",
+                    self.name, fn_name, exc, exc_info=True,
+                )
 
     # ------------------------------------------------------------------
     # Cascades

@@ -9,7 +9,7 @@ from simphonia.commands.system import SYSTEM_BUS  # noqa: E402
 from simphonia.core import default_registry  # noqa: E402
 from simphonia.core.discovery import discover  # noqa: E402
 from simphonia.http.app import create_app  # noqa: E402
-from simphonia.services import activity_storage, character_service, character_storage, chat_service, configuration_service, memory_service, provider_registry, tools_service  # noqa: E402
+from simphonia.services import activity_storage, character_service, character_storage, chat_service, configuration_service, memory_service, provider_registry, shadow_storage, tools_service  # noqa: E402
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +34,10 @@ def build_app() -> FastAPI:
     character_service.init(configuration_service.section("services.character_service"))
     chat_service.init(configuration_service.section("services.chat_service"))
     tools_service.init(configuration_service.section("services.tools_service"))
+
+    # shadow_storage : initialisé après discovery (le bus `messages` doit
+    # exister avant la subscription du listener `feed`).
+    shadow_storage.init(configuration_service.section("services.shadow_storage"))
 
     log.info(
         "simphonia ready: %d bus(es), %d system command(s)",

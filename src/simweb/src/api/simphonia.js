@@ -151,3 +151,12 @@ export const toolsTasksDelete = (slug)                       => dispatch('tools'
 export const toolsRun    = (payload) => dispatch('tools', 'run', payload);
 export const toolsStatus = (run_id)   => dispatch('tools', 'status', { run_id });
 export const toolsCancel = (run_id)   => dispatch('tools', 'cancel', { run_id });
+
+// ── shadow_storage (subconscient des joueurs — Tobias) ────────────────────────
+
+export const shadowEntriesList = (filter, skip = 0, limit = 50) =>
+  dispatch('shadow_storage', 'entries.list', { filter, skip, limit });
+export const shadowEntryGet    = (entry_id)        => dispatch('shadow_storage', 'entries.get',    { entry_id });
+export const shadowEntryUpdate = (entry_id, doc)   => dispatch('shadow_storage', 'entries.update', { entry_id, doc });
+export const shadowEntryDelete = (entry_id)        => dispatch('shadow_storage', 'entries.delete', { entry_id });
+export const shadowChromaResync = ()               => dispatch('shadow_storage', 'chroma.resync');

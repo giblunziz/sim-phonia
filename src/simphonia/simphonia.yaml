@@ -25,6 +25,21 @@ providers:
 
 
 services:
+  shadow_storage:
+    strategy: mongodb_strategy
+    database_uri: ${MONGO_URI}
+    database_name: ${MONGO_DATABASE}
+    collection: subconscient
+    chroma_collection: subconscient
+    subscriptions:
+      - messages
+    excluded_keys:            # denylist — métadonnées structurelles uniquement, le reste est admis et indexé
+      - from
+      - to
+      - round
+      - ts
+      - _id
+      - id
   character_storage:
     strategy: mongodb_strategy
     database_uri: ${MONGO_URI}

@@ -129,6 +129,55 @@ _(vide)_
 
 ## DONE
 
+### 2026-04-24 — 🧠 `shadow_storage` — capture passive du subconscient des joueurs (T1→T8)
+
+Spec complète dans [`documents/shadow_storage.md`](./documents/shadow_storage.md). Plan T1→T8 livré.
+
+**Concept** : alimentation **passive** d'une collection `subconscient` (Mongo + ChromaDB) via le nouveau bus `messages` + un mécanisme **observer pattern** sur le `Bus` core. Aucune modif fonctionnelle dans `activity_service` / `chat_service` — juste un fan-out fire-and-forget après parsing LLM. Préalable matériel pour Tobias runtime (H5 — la cognition se nourrira de ce subconscient).
+
+**Distinction `subconscient` vs `psy_memory`** :
+- `subconscient` (livré aujourd'hui) — matière brute par joueur, alimentée passivement
+- `psy_memory` (à venir avec H5) — analyses/scores écrits par Tobias en relisant le subconscient
+
+**Back** :
+- `core/bus.py` : `Bus.subscribe(listener)` + fan-out post-callback dans `dispatch()`, isolation best-effort des exceptions listener (callback exception ≠ subscriber exception)
+- `commands/messages.py` : bus `messages` + commande no-op `published` (sert de canal nommé pour le pub/sub)
+- `services/activity_service/engine.py` : helper `_publish_messages("activity", slug, exchange)` après `_build_exchange()`
+- `services/chat_service/strategies/default_strategy.py` : helper `_publish_messages(from_char, data)` après `json.loads` réussi (perdu si fallback texte brut, par construction)
+- `services/shadow_storage/` : ABC `ShadowStorageService` + factory + `MongoShadowStorage` (Mongo + Chroma + embedder `paraphrase-multilingual-MiniLM-L12-v2` dédié, denylist `excluded_keys` configurable YAML, schemaless `_extract_candidates` avec déballage des wrappers `private`/`public`, push atomique Mongo→Chroma, `resync_chroma` full rebuild)
+- `commands/shadow_storage.py` : 5 commandes bus (`entries.list/get/update/delete`, `chroma.resync`) — admin/UI uniquement, aucun `mcp=True`
+- `bootstrap.py` : `shadow_storage.init(section)` après discovery, auto-subscribe sur les bus listés dans YAML `subscriptions: [messages]`
+- `simphonia.yaml` : section `services.shadow_storage` complète (strategy, mongo URI, collection `subconscient`, chroma collection `subconscient`, subscriptions, excluded_keys)
+
+**Front simweb** :
+- `api/simphonia.js` : 5 endpoints `shadowEntriesList/Get/Update/Delete` + `shadowChromaResync`
+- `components/tobias/ShadowDataPanel.jsx` : header (Refresh + Resync Chroma), filtres `bus_origin` (hardcodé `["activity", "chat"]`) + `from_char` (peuplé via `character/list`), table colonnes `from / bus_origin / ts / preview / actions`, pagination 50/page, click ligne → modale lecture (fermable au backdrop), modale édition `JsonEditor` (fermeture explicite uniquement, pas de perte accidentelle), delete confirmé, resync Chroma confirmé
+- `components/Sidebar.jsx` : nouvelle rubrique **Tobias** + sous-item **Subconscient**
+- `App.jsx` : route vers `ShadowDataPanel`
+- `index.css` : section *Tobias / Subconscient* + composants réutilisables (`.modal*`, `.alert-error/info`, `.btn-icon`, `.json-pre`)
+
+**Tests** : 44 TU verts répartis en 3 fichiers
+- `test_bus_subscribe.py` (18) — subscription basics, fan-out, isolation des erreurs, ordre callback/listener
+- `test_messages_bus.py` (7) — registration, no-op, fan-out
+- `test_shadow_storage.py` (19) — `_extract_candidates` schemaless, filtre admission, embedding text déterministe, init/subscribe, get guard
+
+Suite complète : 159/160 verts (1 KO pré-existant `test_exact_four_categories` lié à l'ajout de `presentation` dans `MEMORIZE_CATEGORIES`, hors scope).
+
+**Propriétés** :
+- Engine/chat ignorent l'existence de Tobias — ne savent même pas qui écoute
+- Schemaless de bout en bout — les producteurs émettent leur format, le shadow filtre ce qu'il sait extraire
+- Denylist plutôt qu'allowlist → tout nouveau champ d'exchange est admis automatiquement
+- Update payload n'auto-resync pas Chroma (compromis perf — bouton manuel)
+- Listeners synchrones, exceptions isolées (un listener KO n'impacte ni le dispatch ni les autres)
+
+**Validation E2E** : collection Mongo `subconscient` se remplit en temps réel à chaque tour de jeu (activity ou chat). Filtres + édition + delete + resync Chroma vérifiés côté UI.
+
+**Dette technique notée** : embedder SentenceTransformer chargé deux fois au boot (`memory_service` + `shadow_storage`) → ~840 Mo RAM + ~10s cold start. Mutualisable plus tard via un `embedder_service` partagé. À scheduler quand un 3e service en aura besoin (futur `psy_memory` typiquement).
+
+**Validation utilisateur** : OK 2026-04-24.
+
+---
+
 ### 2026-04-23 — 🛠️ `tools_service` — atelier one-shot piloté par LLM (port modernisé de `run_task.py`)
 
 Spec complète dans [`documents/tools_service.md`](./documents/tools_service.md). Plan T1→T9 livré.

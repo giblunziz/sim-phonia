@@ -29,6 +29,7 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [activity_engine.md](./documents/activity_engine.md) — cahier des charges de l'`activity_engine` (orchestrateur de session MJ-driven, SessionState, commandes bus activity, SSE, circuit breaker, persistance MongoDB)
 - [mj_service.md](./documents/mj_service.md) — cahier des charges du `mj_service` (mj_mode human|human_in_loop|autonomous × turning_mode starter|named|round_robin|next_remaining|random_remaining|random, façade MCP dual avec mcp_role, port Beholder)
 - [tools_service.md](./documents/tools_service.md) — cahier des charges du `tools_service` (atelier utilitaire one-shot, double boucle source×subject, registre mongo task_collection, outputs fichiers .txt)
+- [shadow_storage.md](./documents/shadow_storage.md) — cahier des charges du `shadow_storage` : capture passive du subconscient des joueurs via bus `messages` + observer pattern, persistance Mongo + ChromaDB, panneau **Tobias > Subconscient** côté simweb
 
 ### Études & synthèses
 

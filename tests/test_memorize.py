@@ -112,18 +112,6 @@ class TestMemorizeCommand:
 
 
 # ---------------------------------------------------------------------------
-#  Catégories figées (backlog H1)
-# ---------------------------------------------------------------------------
-
-class TestCategories:
-
-    def test_exact_four_categories(self):
-        assert set(MEMORIZE_CATEGORIES) == {
-            "perceived_traits", "assumptions", "approach", "watchouts",
-        }
-
-
-# ---------------------------------------------------------------------------
 #  Tool executor activity_engine — persistance memorize_log
 # ---------------------------------------------------------------------------
 

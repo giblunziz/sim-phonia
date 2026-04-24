@@ -1224,3 +1224,254 @@ input:not([type]):focus { outline: none; border-color: var(--accent); }
 .tools-cells li.ok { color: var(--text); }
 .tools-cells li.ko { color: var(--danger); }
 .tools-cells code { font-size: 0.78rem; }
+
+/* ── Tobias / Subconscient ─────────────────────────────────────── */
+
+.shadow-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.shadow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.shadow-header h2 { margin: 0; font-size: 1.2rem; }
+
+.shadow-header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shadow-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.shadow-filters label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.shadow-filters select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  min-width: 12rem;
+}
+
+.shadow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shadow-list-meta {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.shadow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.shadow-table th,
+.shadow-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.shadow-table th {
+  background: var(--surface);
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shadow-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+.shadow-row { cursor: pointer; }
+
+.shadow-table .mono {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.shadow-preview {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  max-width: 50rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shadow-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.shadow-empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 1.5rem;
+  font-style: italic;
+}
+
+.shadow-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+/* ── Bouton icône (réutilisable) ───────────────────────────────── */
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.2rem 0.45rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-icon:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.04);
+}
+
+.btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-icon.btn-danger {
+  border-color: rgba(255,107,107,0.3) !important;
+  color: var(--danger) !important;
+}
+.btn-icon.btn-danger:hover:not(:disabled) {
+  border-color: var(--danger) !important;
+  background: rgba(255,107,107,0.06);
+}
+
+/* ── Alertes (réutilisables) ────────────────────────────────────── */
+
+.alert-error,
+.alert-info {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.alert-error {
+  background: rgba(255,107,107,0.08);
+  border-color: rgba(255,107,107,0.3);
+  color: var(--danger);
+}
+
+.alert-info {
+  background: rgba(100,180,255,0.06);
+  border-color: rgba(100,180,255,0.25);
+  color: var(--text);
+}
+
+/* ── Modale (réutilisable) ──────────────────────────────────────── */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-width: 60rem;
+  max-height: 85vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-wide { max-width: 80rem; }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.modal-header h3 { margin: 0; font-size: 1rem; }
+
+.modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.modal-warning {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+.json-pre {
+  margin: 0;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface);
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}

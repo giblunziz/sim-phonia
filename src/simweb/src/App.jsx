@@ -12,6 +12,7 @@ import StorageScenesPanel from './components/storage/StorageScenesPanel.jsx';
 import StorageInstancesPanel from './components/storage/StorageInstancesPanel.jsx';
 import ActivityDashboardPanel from './components/activity/ActivityDashboardPanel.jsx';
 import ToolsPanel from './components/tools/ToolsPanel.jsx';
+import ShadowDataPanel from './components/tobias/ShadowDataPanel.jsx';
 
 export default function App() {
   const [session, setSession]               = useState(null);
@@ -56,6 +57,8 @@ export default function App() {
         />;
       case 'tools':
         return <ToolsPanel />;
+      case 'tobias-subconscient':
+        return <ShadowDataPanel />;
       default:
         return null;
     }
