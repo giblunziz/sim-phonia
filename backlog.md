@@ -129,6 +129,58 @@ _(vide)_
 
 ## DONE
 
+### 2026-04-25 — 🧑 Mode `human-in-the-loop` — joueur humain dans une activité
+
+Spec complète dans [`documents/human_in_the_loop.md`](./documents/human_in_the_loop.md). Brainstorm + 5 étapes incrémentales livrées en une session.
+
+**Concept** : un participant désigné comme humain (`type: "human"` dans la fiche, ou override session via combo simweb) prend la place du LLM. L'`activity_engine.give_turn` détecte le tour humain, court-circuite l'appel LLM, publie un SSE `activity.input_required`, et attend une saisie via la commande `activity/submit_human_turn`. Cardinalité **0..1** par activité — un seul humain (l'utilisateur lui-même).
+
+**Mécanisme transverse** — pas de service dédié, juste une bifurcation dans des pipelines existants.
+
+**Back** :
+- `core/errors.py` : `InvalidHumanSubmit`, `EmptyTurn`
+- `services/activity_service/engine.py` :
+  - `SessionState.human_player: str | None` + `pending_human_input: dict | None`
+  - Helper `_resolve_human_player(char_svc, players, override)` — override session prime sur scan fiches `type=="human"`, warning si > 1, fallback `None`
+  - `run(instance_id, human_player=None)` — résolution + persistance dans `instances.put` (pour reprise)
+  - `resume()` restaure `human_player` depuis le doc Mongo (figé au démarrage, pas de re-résolution)
+  - `_do_give_turn` : bifurcation HITL après persistance MJ, publie `activity.input_required` (payload minimal `{session_id, target, round}` — Q11), retour sans appel LLM
+  - `submit_human_turn(session_id, target, to, talk, actions)` : validations (running, target match, pending non vide, talk/actions pas vides simultanément), wrapping `str → list[str]` côté stockage (préserve schéma exchange), `raw_response: null` (signature humaine), append history + persistance + SSE `activity.turn_complete` + hook MJ
+- `services/activity_service/context_builder.py` : helper `_synthesize_raw_from_public(from_char, public)` — fallback dans `build_messages` quand `raw_response` absent (sinon les exchanges humains étaient invisibles dans le contexte des autres joueurs)
+- `commands/activity.py` : signature `run(instance_id, human_player=None)` + nouvelle commande `submit_human_turn` (sans `mcp=True` — un LLM n'a aucune raison de l'appeler)
+
+**Front simweb** :
+- `api/simphonia.js` : `activityRun(instance_id, human_player)` étendu, `activitySubmitHumanTurn` ajouté
+- `StorageInstancesPanel.jsx` : combo « Joué par humain » par ligne d'instance (`[— auto — / participant1 / …]`), state `humanPlayerByInstance` éphémère, grille élargie `minmax(280px, auto)` pour rendre la combo visible. Si `auto` → serveur scan les fiches.
+- `ActivityDashboardPanel.jsx` : composant `HumanInputForm` en bas du dashboard (combo `to` stateful + 2 textareas `talk`/`actions`), activé sur SSE `activity.input_required`, désactivé sur `turn_complete`. Auto-déclenche `mj.next_turn` après envoi **uniquement** si `mj_mode === 'human'` (en `autonomous`, le MJ LLM enchaîne déjà via son hook `on_turn_complete`)
+
+**Doc** :
+- `human_in_the_loop.md` créé (Description / Cahier des charges / 12 décisions Q1-Q12 / Plan 5 étapes)
+- `activity_engine.md` mis à jour : §3 commandes (run + human_player, submit_human_turn), §4 SessionState (champs HITL), §6 give_turn (étape 8 bifurcation), §9 SSE (input_required, started/resumed enrichis avec human_player)
+- `CLAUDE.md` index Spécifications
+
+**Tests** : 30 TU verts répartis en 2 fichiers
+- `test_engine_human_player.py` (11) — `_resolve_human_player` : override valide, résolu via `get_identifier`, override prime sur scan, override invalide + fallback, scan multi-humains avec warning, scan sans humain, edge cases (string vide, players vide)
+- `test_engine_human_submit.py` (19) — bifurcation `_do_give_turn` (publie input_required, persiste instruction MJ avant bifurcation, résolution identifier, payload minimal sans whisper/event), `submit_human_turn` happy path (wrapping, identifier, talk seul, actions seul, to spécifique, to=all par défaut), erreurs (session introuvable, ended, target ≠ human_player, pas de pending, empty turn whitespace), intégration context_builder (synthesize_raw_from_public, exchange humain visible côté Antoine, role assistant côté Valère)
+
+Suite complète : 200/200 verts, zéro régression. Build simweb OK.
+
+**Propriétés** :
+- Type `human` dans `character_service` déjà existant (livré 2026-04-22) — aucune modif de ce service nécessaire
+- `chat_service` non touché — son flag `human` ad-hoc reste pour les tests dev (le « vrai » 1-to-1 est une activité à 2 joueurs)
+- `raw_response: null` côté exchange humain est sémantique — le helper `_synthesize_raw_from_public` génère le format LLM-équivalent au moment de la lecture, pas du stockage. Aucune fausse signature LLM en base.
+- Pas de timeout — l'activité attend indéfiniment la saisie humaine (l'humain n'est pas un signal d'échec)
+- Form `to` stateful sur la session UI (init `"all"`, modifiable, conservé entre exchanges, reset au lancement/reprise) — pas de cookie/localStorage cross-activité
+- Auto `mj.next_turn` après submit en mode MJ humain : confort UI sans coût (si l'auto échoue, le bouton ▶ Next reste accessible manuellement)
+
+**Bug fix en cours de validation** : les exchanges humains n'apparaissaient pas dans le contexte des autres joueurs (`build_messages` lisait `raw_response` qui était `null`). Corrigé par `_synthesize_raw_from_public` qui reconstruit un JSON équivalent depuis le `public` de l'exchange.
+
+**Validation E2E** : Valère désigné humain via combo Storage, bifurcation `give_turn`, form HITL activé via SSE, saisie + envoi → exchange visible des autres joueurs LLM, auto-give_turn enchaîne sur le suivant en mode MJ humain.
+
+**Validation utilisateur** : OK 2026-04-25.
+
+---
+
 ### 2026-04-24 — 🧠 `shadow_storage` — capture passive du subconscient des joueurs (T1→T8)
 
 Spec complète dans [`documents/shadow_storage.md`](./documents/shadow_storage.md). Plan T1→T8 livré.

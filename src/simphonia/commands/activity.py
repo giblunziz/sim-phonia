@@ -13,8 +13,8 @@ ACTIVITY_BUS = "activity"
 
 @command(bus=ACTIVITY_BUS, code="run",
          description="Initialise une session d'activité depuis une instance et retourne le dashboard MJ")
-def run(instance_id: str) -> dict:
-    return engine.run(instance_id)
+def run(instance_id: str, human_player: str | None = None) -> dict:
+    return engine.run(instance_id, human_player=human_player)
 
 
 @command(bus=ACTIVITY_BUS, code="resume",
@@ -68,6 +68,21 @@ def give_turn(session_id: str, target: str, instruction: str | None = None) -> d
 )
 def next_round(session_id: str) -> dict:
     return engine.next_round(session_id)
+
+
+@command(
+    bus=ACTIVITY_BUS,
+    code="submit_human_turn",
+    description="Intègre la saisie d'un joueur humain dans l'activité (HITL — non exposée en MCP)",
+)
+def submit_human_turn(
+    session_id: str,
+    target:     str,
+    to:         str,
+    talk:       str,
+    actions:    str,
+) -> dict:
+    return engine.submit_human_turn(session_id, target, to, talk, actions)
 
 
 @command(

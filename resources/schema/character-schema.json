@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sim-phonia.local/schemas/character.json",
+  "title": "Character",
+  "description": "Fiche personnage sim-phonia. Schéma extrapolé à partir des fiches existantes dans resources/characters/. Tolérant aux variantes (string OU array of strings) sur les champs narratifs, en attendant une normalisation éventuelle.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["_id", "full_name", "given_name", "family_name", "age", "gender"],
+
+  "definitions": {
+    "stringOrStringArray": {
+      "description": "Champ narratif qui peut être soit une string brute, soit un array de strings (puces). Les deux formes coexistent dans le corpus existant.",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      ]
+    },
+
+    "insightFacet": {
+      "description": "Facette d'insight DISC (adapted ou real). Forme structurée {colors, details} préférée, mais string brute tolérée pour les fiches anciennes.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["colors", "details"],
+          "properties": {
+            "colors": {
+              "type": "string",
+              "description": "Couleur(s) DISC : Rouge, Jaune, Vert, Bleu — éventuellement combinées (ex: 'Vert/Bleu', 'Jaune / Rouge')."
+            },
+            "details": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+
+    "valueEntry": {
+      "type": "object",
+      "required": ["name", "details"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "details": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+
+    "flawEntry": {
+      "description": "Défaut de personnage. Forme structurée {trait, details} préférée, string brute tolérée (forme legacy).",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["trait", "details"],
+          "properties": {
+            "trait": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Étiquette courte du trait (snake_case recommandé : 'lâche', 'mythomane', 'auto-saboteur'…)."
+            },
+            "details": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+
+    "priorKnowledgeEntry": {
+      "type": "object",
+      "required": ["who", "details"],
+      "properties": {
+        "who": {
+          "type": "string",
+          "minLength": 1,
+          "description": "_id du personnage déjà connu."
+        },
+        "details": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "properties": {
+    "_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Identifiant unique (slug minuscule)."
+    },
+    "code": {
+      "type": "string",
+      "description": "Code court interne (ex: F1, H2, NPC1). Optionnel."
+    },
+    "role": {
+      "type": "string",
+      "enum": ["PC", "NPC"],
+      "description": "Rôle dans le scénario. Optionnel — défaut implicite : PC (joueur)."
+    },
+    "full_name": { "type": "string", "minLength": 1 },
+    "given_name": { "type": "string", "minLength": 1 },
+    "family_name": { "type": "string", "minLength": 1 },
+    "age": { "type": "integer", "minimum": 0, "maximum": 150 },
+    "gender": {
+      "type": "string",
+      "description": "Forme libre (ex: 'femme', 'homme', 'non-binaire'). Pas d'enum strict."
+    },
+
+    "orientation": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "details": { "$ref": "#/definitions/stringOrStringArray" }
+      },
+      "required": ["label"],
+      "additionalProperties": false
+    },
+
+    "relationship": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Forme libre (ex: 'célibataire', 'marié', 'divorcé', 'en couple', 'séparé')."
+        },
+        "partner": {
+          "type": "string",
+          "description": "_id du partenaire (autre personnage du casting)."
+        },
+        "duration": {
+          "type": "string",
+          "description": "Durée libre, format texte (ex: '8 ans')."
+        },
+        "details": { "$ref": "#/definitions/stringOrStringArray" }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+
+    "background": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string", "minLength": 1 },
+            "sector": { "type": "string" },
+            "location": { "type": "string" },
+            "details": { "$ref": "#/definitions/stringOrStringArray" }
+          },
+          "required": ["title"],
+          "additionalProperties": false
+        },
+        "education": { "$ref": "#/definitions/stringOrStringArray" },
+        "family": {
+          "type": "object",
+          "properties": {
+            "parents": { "$ref": "#/definitions/stringOrStringArray" },
+            "siblings": { "$ref": "#/definitions/stringOrStringArray" },
+            "children": { "$ref": "#/definitions/stringOrStringArray" },
+            "details": { "$ref": "#/definitions/stringOrStringArray" }
+          },
+          "additionalProperties": true
+        },
+        "home": { "$ref": "#/definitions/stringOrStringArray" },
+        "marking_events": { "$ref": "#/definitions/stringOrStringArray" }
+      },
+      "additionalProperties": true
+    },
+
+    "psychology": {
+      "type": "object",
+      "properties": {
+        "insight": {
+          "type": "object",
+          "description": "DISC : profil adapté (façade) vs réel (sous le masque), avec un gap qualitatif.",
+          "properties": {
+            "adapted": { "$ref": "#/definitions/insightFacet" },
+            "real":    { "$ref": "#/definitions/insightFacet" },
+            "gap":     { "$ref": "#/definitions/stringOrStringArray" }
+          },
+          "additionalProperties": false
+        },
+        "transactional": {
+          "type": "object",
+          "description": "Analyse transactionnelle. Tous les états du moi sont optionnels — seuls ceux pertinents pour le perso sont remplis.",
+          "properties": {
+            "dominant": { "type": "string" },
+            "adult":    { "type": "string" },
+            "parent":   { "type": "string" },
+            "child":    { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "values": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/valueEntry" }
+        },
+        "defense": { "$ref": "#/definitions/stringOrStringArray" },
+        "comfort": { "$ref": "#/definitions/stringOrStringArray" },
+        "threat":  { "$ref": "#/definitions/stringOrStringArray" }
+      },
+      "additionalProperties": true
+    },
+
+    "flaws": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/flawEntry" }
+    },
+
+    "social": {
+      "type": "array",
+      "description": "Tics sociaux observables, un par puce. Court, descriptif, comportemental.",
+      "items": { "type": "string", "minLength": 1 }
+    },
+
+    "likes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+
+    "game": {
+      "type": "object",
+      "description": "Éléments dramaturgiques liés à la partie/scénario.",
+      "properties": {
+        "phobia": { "$ref": "#/definitions/stringOrStringArray" },
+        "secret": { "$ref": "#/definitions/stringOrStringArray" },
+        "prior_knowledge": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/priorKnowledgeEntry" }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "memory": {
+      "type": "object",
+      "properties": {
+        "slots": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre de slots de mémoire (corrélé au coeff transactionnel — cf. cognition.md)."
+        },
+        "style": { "type": "string", "minLength": 1 }
+      },
+      "required": ["slots"],
+      "additionalProperties": false
+    },
+
+    "appearance": {
+      "type": "object",
+      "description": "Description physique. Tous les champs sont optionnels et libres en formulation.",
+      "properties": {
+        "height":                { "type": "string" },
+        "hair":                  { "type": "string" },
+        "eyes":                  { "type": "string" },
+        "build":                 { "type": "string" },
+        "complexion":            { "type": "string" },
+        "facial_hair":           { "type": "string" },
+        "signature_accessory":   { "type": "string" },
+        "distinctive_features":  { "type": "string" },
+        "style":                 { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "events": {
+      "type": "array",
+      "description": "Journal d'événements de partie. Format à formaliser quand la mécanique d'événements sera figée.",
+      "items": {}
+    }
+  }
+}

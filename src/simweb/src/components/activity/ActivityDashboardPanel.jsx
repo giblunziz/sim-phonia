@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   runsList, runsDelete, knowledgeDeleteByActivity,
   activityResume, activityGiveTurn, activityNextRound, activityEnd,
+  activitySubmitHumanTurn,
   openActivityStream,
   mjNextTurn,
 } from '../../api/simphonia.js';
@@ -210,6 +211,130 @@ function RunsList({ onResume }) {
   );
 }
 
+// ── HumanInputForm ─────────────────────────────────────────────────────────────
+//
+// Mini-form HITL en bas du dashboard. Activé seulement après réception d'un
+// SSE `activity.input_required` ciblant `humanPlayer`. Cf. documents/human_in_the_loop.md.
+//
+// `to` est stateful sur la session UI courante (pas de reset entre exchanges).
+// `talk` et `actions` sont des `str` simples (textareas), wrappés en `[str]`
+// côté serveur dans `submit_human_turn`.
+
+function HumanInputForm({ sessionId, humanPlayer, players, mjMode, active, onSent }) {
+  const [to,      setTo]      = useState('all');
+  const [talk,    setTalk]    = useState('');
+  const [actions, setActions] = useState('');
+  const [busy,    setBusy]    = useState(false);
+  const [err,     setErr]     = useState(null);
+
+  // `to` reste tel quel entre exchanges. `talk` et `actions` sont reset
+  // automatiquement après envoi (cf. handleSubmit).
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!active || busy) return;
+    if (!talk.trim() && !actions.trim()) {
+      setErr('Talk et actions ne peuvent pas être tous les deux vides.');
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await activitySubmitHumanTurn(sessionId, humanPlayer, to || 'all', talk, actions);
+      setTalk('');
+      setActions('');
+      if (onSent) onSent();
+      // Confort : en mode MJ humain, l'utilisateur pilote ET joue. Après son
+      // tour, on enchaîne automatiquement le tour suivant via mj.next_turn.
+      // En mode autonomous, c'est le MJ LLM qui enchaîne via son hook
+      // `on_turn_complete` — pas de double déclenchement.
+      if (mjMode === 'human') {
+        try {
+          await mjNextTurn(sessionId);
+        } catch (e3) {
+          // Best-effort — n'écrase pas un succès du submit
+          // eslint-disable-next-line no-console
+          console.warn('[HITL] mj.next_turn auto a échoué :', e3.message);
+        }
+      }
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const others = (players ?? []).filter((p) => p !== humanPlayer);
+
+  return (
+    <form className="hitl-form" onSubmit={handleSubmit}
+      style={{
+        borderTop: '1px solid var(--border)',
+        padding: '0.75rem 1rem',
+        background: active ? 'var(--surface)' : 'var(--surface-dim, #1a1a1a)',
+        opacity: active ? 1 : 0.55,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
+        <strong style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>
+          🧑 {humanPlayer} — {active ? 'à toi de jouer' : 'en attente du tour…'}
+        </strong>
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+        <div className="field" style={{ flex: '0 0 140px' }}>
+          <label htmlFor="hitl-to" style={{ fontSize: '0.78rem' }}>À</label>
+          <select
+            id="hitl-to"
+            value={to}
+            onChange={(ev) => setTo(ev.target.value)}
+            disabled={!active || busy}
+            style={{ width: '100%' }}
+          >
+            <option value="all">all</option>
+            {others.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div className="field" style={{ flex: 1 }}>
+          <label htmlFor="hitl-talk" style={{ fontSize: '0.78rem' }}>Talk</label>
+          <textarea
+            id="hitl-talk"
+            rows={2}
+            value={talk}
+            onChange={(ev) => setTalk(ev.target.value)}
+            disabled={!active || busy}
+            placeholder="Ce que tu dis…"
+            style={{ width: '100%', resize: 'vertical' }}
+          />
+        </div>
+        <div className="field" style={{ flex: 1 }}>
+          <label htmlFor="hitl-actions" style={{ fontSize: '0.78rem' }}>Actions</label>
+          <textarea
+            id="hitl-actions"
+            rows={2}
+            value={actions}
+            onChange={(ev) => setActions(ev.target.value)}
+            disabled={!active || busy}
+            placeholder="Ce que tu fais (gestes, regards…)"
+            style={{ width: '100%', resize: 'vertical' }}
+          />
+        </div>
+      </div>
+      {err && <p className="error" style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>{err}</p>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+        <button
+          type="submit"
+          className="btn-secondary"
+          style={{ background: 'var(--accent)', color: '#fff', fontWeight: 600 }}
+          disabled={!active || busy}
+        >
+          {busy ? '…' : 'Envoyer'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+
 // ── MJDashboard ────────────────────────────────────────────────────────────────
 
 function MJDashboard({ sessionData, onClose }) {
@@ -218,6 +343,8 @@ function MJDashboard({ sessionData, onClose }) {
     amorce, event: initEvent, starter,
     exchanges: initExchanges, max_rounds: initMaxRounds,
     state: initState,
+    human_player,
+    mj_mode,
   } = sessionData;
 
   const [round, setRound]             = useState(initRound ?? 1);
@@ -232,6 +359,9 @@ function MJDashboard({ sessionData, onClose }) {
   const [showAmorce, setShowAmorce]   = useState(true);
   // Preview du prochain speaker, alimenté par SSE mj.next_ready (publié par HumanMJ)
   const [nextReady, setNextReady]     = useState(null);
+  // HITL — `true` quand le serveur a publié `activity.input_required` pour le
+  // joueur humain et qu'on attend sa saisie. Reset à `turn_complete`.
+  const [hitlActive, setHitlActive]   = useState(false);
 
   const logRef  = useRef(null);
   const sseRef  = useRef(null);
@@ -258,11 +388,21 @@ function MJDashboard({ sessionData, onClose }) {
             whisper: evt.whisper ?? null,
           }]);
           setPending(false);
+          setHitlActive(false);
         }
 
         if (evt.type === 'activity.turn_skipped') {
           setExchanges((prev) => [...prev, { _skipped: true, speaker: evt.speaker, round, reason: evt.reason }]);
           setPending(false);
+          setHitlActive(false);
+        }
+
+        if (evt.type === 'activity.input_required') {
+          // Bifurcation HITL — le serveur attend la saisie de l'humain.
+          // On désactive le pending visuel (ce n'est plus un LLM qui travaille)
+          // et on active le form HITL.
+          setPending(false);
+          setHitlActive(true);
         }
 
         if (evt.type === 'activity.round_changed') {
@@ -471,6 +611,17 @@ function MJDashboard({ sessionData, onClose }) {
         </div>
 
       </div>
+
+      {human_player && !ended && (
+        <HumanInputForm
+          sessionId={session_id}
+          humanPlayer={human_player}
+          players={players}
+          mjMode={mj_mode}
+          active={hitlActive}
+          onSent={() => setHitlActive(false)}
+        />
+      )}
     </div>
   );
 }

@@ -30,6 +30,7 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [mj_service.md](./documents/mj_service.md) — cahier des charges du `mj_service` (mj_mode human|human_in_loop|autonomous × turning_mode starter|named|round_robin|next_remaining|random_remaining|random, façade MCP dual avec mcp_role, port Beholder)
 - [tools_service.md](./documents/tools_service.md) — cahier des charges du `tools_service` (atelier utilitaire one-shot, double boucle source×subject, registre mongo task_collection, outputs fichiers .txt)
 - [shadow_storage.md](./documents/shadow_storage.md) — cahier des charges du `shadow_storage` : capture passive du subconscient des joueurs via bus `messages` + observer pattern, persistance Mongo + ChromaDB, panneau **Tobias > Subconscient** côté simweb
+- [human_in_the_loop.md](./documents/human_in_the_loop.md) — mode HITL transverse : participant désigné comme humain dans une activité, bifurcation `give_turn` + commande `submit_human_turn` + form simweb (cardinalité 0..1)
 
 ### Études & synthèses
 
@@ -37,6 +38,8 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [activity_presentation.md](./documents/activity_presentation.md) — activité `presentation` : phases onboarding/cross-analyse, alimentation de `knowledge`, format d'injection dans le context builder
 - [activity_context_builder.md](./documents/activity_context_builder.md) — cahier des charges + plan du `activity_context_builder` : assemblage system prompt + messages, constantes PUBLIC/PRIVATE_FIELDS, interface `build_system_prompt / build_messages / get_tools`
 - [cognition.md](./documents/cognition.md) — synthèse piste de travail 2026-04-23 : mécanique du psy/shadow_memory (AOP cascades sur `memory/recall`, intervention DISC, formule `memory.slots × coeff_transactionnel`, séparation Décideur/Narrateur, scénario pilote Antoine/Manon/Élise)
+- [character-model.md](./documents/character-model.md) — normalisation progressive du modèle de fiche personnage (DISC en 4 axes 0-100 indépendants, gap descriptif côté perso/quantifié côté Tobias, sections suivantes à traiter)
+- [analyse-transactionnelle/analyse-transactionnelle.md](./documents/analyse-transactionnelle/analyse-transactionnelle.md) — étude AT (Berne/Kahler/Karpman) appliquée à Simphonia : modèle structural (fiche) vs fonctionnel (observé), mapping PUBLIC/PRIVATE ↔ message social/psychologique, design d'un agent AT observateur distinct de Tobias
 
 ## Conventions
 

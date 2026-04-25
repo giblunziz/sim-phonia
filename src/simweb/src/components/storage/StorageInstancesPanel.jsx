@@ -257,6 +257,9 @@ export default function StorageInstancesPanel({ onLaunch }) {
   const [msg, setMsg]             = useState(null);
   const [error, setError]         = useState(null);
   const [slugError, setSlugError] = useState(false);
+  // HITL — sélection « joué par humain » par instance, persistée seulement
+  // jusqu'au lancement. Vide = pas d'override (le serveur scan les fiches).
+  const [humanPlayerByInstance, setHumanPlayerByInstance] = useState({});
 
   const load = useCallback(async () => {
     try { setEntries(await instanceList() ?? []); }
@@ -325,7 +328,8 @@ export default function StorageInstancesPanel({ onLaunch }) {
     setBusy((b) => ({ ...b, [id]: true }));
     setError(null);
     try {
-      const result = await activityRun(id);
+      const humanPlayer = humanPlayerByInstance[id] || null;
+      const result = await activityRun(id, humanPlayer);
       if (onLaunch) onLaunch(result);
     } catch (e) {
       setError(e.message);
@@ -505,19 +509,32 @@ export default function StorageInstancesPanel({ onLaunch }) {
         {entries.length === 0
           ? <p className="empty-note">Aucune instance.</p>
           : (
-            <div className="knowledge-grid" style={{ gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr auto' }}>
-              <div className="knowledge-header">
+            <div className="knowledge-grid" style={{ gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr minmax(280px, auto)' }}>
+              <div className="knowledge-header" style={{ gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr minmax(280px, auto)' }}>
                 <span>Slug</span><span>Activité</span><span>Scène</span>
-                <span>Joueurs</span><span>Modifié le</span><span></span>
+                <span>Joueurs</span><span>Modifié le</span><span>Actions</span>
               </div>
               {entries.map((e) => (
-                <div key={e._id} className="knowledge-row">
+                <div key={e._id} className="knowledge-row" style={{ gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr minmax(280px, auto)' }}>
                   <span className="kc-tag">{e._id}</span>
                   <span className="kc-dim">{e.activity}</span>
                   <span className="kc-dim">{e.scene}</span>
                   <span className="kc-dim">{(e.players ?? []).length} joueur(s)</span>
                   <span className="kc-dim">{formatTs(e.ts_updated)}</span>
                   <span className="kc-actions">
+                    <select
+                      className="btn-row"
+                      title="Joué par humain (HITL — laisse vide pour fallback fiche)"
+                      value={humanPlayerByInstance[e._id] ?? ''}
+                      onChange={(ev) => setHumanPlayerByInstance((prev) => ({ ...prev, [e._id]: ev.target.value }))}
+                      style={{ fontSize: '0.78rem', padding: '0.15rem 0.3rem', maxWidth: '110px' }}
+                      disabled={busy[e._id]}
+                    >
+                      <option value="">— auto —</option>
+                      {(e.players ?? []).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
                     <button className="btn-row" title="Éditer" onClick={() => openEdit(e)}>✎</button>
                     <button className="btn-row" title="Dupliquer (slug à saisir)" onClick={() => openDuplicate(e)}>⎘</button>
                     <button

@@ -33,6 +33,21 @@ def get_tools(activity: dict | None = None, role: str = "player") -> list[dict]:
 #  FORMAT EXCHANGE
 # ======================================================================
 
+
+def _synthesize_raw_from_public(from_char: str, public: dict) -> str:
+    """Génère un JSON équivalent à un `raw_response` LLM à partir d'un `public`
+    d'exchange — utilisé pour les tours HITL (humain) qui n'ont pas de raw.
+
+    Filtre les valeurs vides pour produire un JSON minimal, équivalent à ce
+    qu'un LLM aurait produit pour le même `public`.
+    """
+    payload = {"from": from_char}
+    for k, v in public.items():
+        if v in (None, "", [], {}):
+            continue
+        payload[k] = v
+    return json.dumps(payload, ensure_ascii=False)
+
 def format_exchange(speaker: str, raw_response: str) -> str:
     """Formate un échange brut en markdown distributable aux autres joueurs.
 
@@ -230,7 +245,13 @@ def build_messages(
     for entry in exchange_history:
         from_char = entry.get("from")
         role      = "assistant" if from_char == player else "user"
-        raw       = entry.get("raw_response") or entry.get("content", "")
+        raw       = entry.get("raw_response") or entry.get("content")
+        if not raw:
+            # Exchange sans raw_response (typiquement un tour HITL — l'humain
+            # n'a pas produit de JSON LLM brut). On synthétise un JSON équivalent
+            # depuis le `public` pour que `format_exchange` le rende comme un
+            # tour LLM normal côté contexte des autres joueurs.
+            raw = _synthesize_raw_from_public(from_char or "?", entry.get("public") or {})
         messages.append({"role": role, "content": format_exchange(from_char or "?", raw)})
 
     # 5. Instruction MJ

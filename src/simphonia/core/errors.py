@@ -121,3 +121,23 @@ class DispatchError(SimphoniaError):
 
     def __str__(self) -> str:
         return f"dispatch of {self.bus_name}/{self.code} failed: {self.cause!r}"
+
+
+class InvalidHumanSubmit(SimphoniaError, ValueError):
+    """Tentative de `submit_human_turn` invalide — session non running, target ≠
+    human_player, ou aucun input en attente. Cf. documents/human_in_the_loop.md.
+    """
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+    def __str__(self) -> str:
+        return f"invalid human submit: {self.reason}"
+
+
+class EmptyTurn(SimphoniaError, ValueError):
+    """`submit_human_turn` reçu avec `talk` ET `actions` vides — refus."""
+
+    def __str__(self) -> str:
+        return "empty turn: talk and actions cannot both be empty"

@@ -15,14 +15,16 @@ Il ne dialogue pas avec le LLM directement — il prépare les entrées via `con
 
 | Code | Payload | Retour immédiat |
 |------|---------|-----------------|
-| `run` | `{instance_id}` | `{session_id, players, round, starter, amorce, event}` |
+| `run` | `{instance_id, human_player?}` | `{session_id, players, round, starter, amorce, event, human_player}` |
+| `resume` | `{run_id}` | `{session_id, run_id, players, round, exchanges, …, human_player}` |
 | `give_turn` | `{session_id, target, instruction?}` | `{status: "pending"}` — résultat via SSE |
+| `submit_human_turn` | `{session_id, target, to, talk, actions}` | `{status, session_id, speaker, round}` — saisie HITL, cf. `human_in_the_loop.md` |
 | `next_round` | `{session_id}` | `{round, event, state}` |
 | `end` | `{session_id}` | `{state: "ended"}` |
 
 `activity/debrief` est hors scope V1 (backlog WARM W2).
 
-Pas de `mcp=True` sur ces commandes — le MJ est humain, elles sont pilotées par simweb.
+Le param `human_player` du `run` est optionnel (défaut `null`). Quand fourni, il prime sur le `type: "human"` éventuel des fiches participantes (cf. `human_in_the_loop.md`). `submit_human_turn` n'est **pas** exposée en MCP — un LLM n'a aucune raison de l'appeler.
 
 ## 4. SessionState
 
@@ -31,18 +33,20 @@ Pas de `mcp=True` sur ces commandes — le MJ est humain, elles sont pilotées p
 ```python
 @dataclass
 class SessionState:
-    session_id:       str
-    instance_id:      str
-    instance:         dict                    # snapshot chargé au run (events, instructions, amorce, etc.)
-    activity:         dict                    # template d'activité (rules, json_schema, …)
-    scene:            dict                    # fiche scène
-    characters:       dict[str, dict]         # slug → fiche personnage
-    knowledge:        dict[str, list[dict]]   # slug → knowledge_entries filtrées (présentation)
-    provider_name:    str                     # instance['providers'][0]
-    round:            int                     # round courant (1-based)
-    state:            str                     # "running" | "ended"
-    exchange_history: list[dict]              # append-only, croît à chaque give_turn
-    retry_counts:     dict[tuple, int]        # (round, speaker) → nb tentatives consécutives
+    session_id:          str
+    instance_id:         str
+    instance:            dict                    # snapshot chargé au run (events, instructions, amorce, etc.)
+    activity:            dict                    # template d'activité (rules, json_schema, …)
+    scene:               dict                    # fiche scène
+    characters:          dict[str, dict]         # slug → fiche personnage
+    knowledge:           dict[str, list[dict]]   # slug → knowledge_entries filtrées (présentation)
+    provider_name:       str                     # instance['providers'][0]
+    round:               int                     # round courant (1-based)
+    state:               str                     # "running" | "ended"
+    exchange_history:    list[dict]              # append-only, croît à chaque give_turn
+    retry_counts:        dict[tuple, int]        # (round, speaker) → nb tentatives consécutives
+    human_player:        str | None              # joueur incarné par l'humain (HITL, cardinalité 0..1)
+    pending_human_input: dict | None             # flag d'attente de `submit_human_turn`
 ```
 
 Pause / reprise (rechargement depuis storage dans `exchange_history`) : YAGNI — hors scope V1.
@@ -77,12 +81,13 @@ Non-bloquant : retourne `{status: "pending"}` immédiatement et exécute le pipe
 5. `whisper` = élément de `instance['instructions']` dont `round == session.round` et `who` résolu vers `target` (position 1-based ou slug), ou `None`.
 6. Si `instruction` fourni dans le payload : append dans `instance['mj']` + persiste (put partiel).
 7. Construit `mj_instruction = {"instruction": instruction}` si fourni, sinon `None`.
-8. Appelle `context_builder.build_system_prompt(target, instance, activity, scene, character, knowledge_entries)`.
-9. Appelle `context_builder.build_messages(target, instance, exchange_history, current_round_event, whisper, mj_instruction, amorce=None)`.
-10. Appelle `context_builder.get_tools(activity)`.
-11. Appelle `provider.call(system_prompt, messages, tools=tools, tool_executor=_make_tool_executor(target))`.
-12. Parse via `parse_llm_json(raw_response)`.
-13. **Circuit breaker** : si parse échoue ou provider lève exception, incrémente `retry_counts[(round, target)]` et retry jusqu'à 3. Au 3e échec : publie SSE `activity.turn_skipped` et abandonne.
+8. **Bifurcation HITL** : si `target == session.human_player`, on flag `pending_human_input`, on persiste, on publie SSE `activity.input_required`, et on quitte le thread sans appeler le LLM. La suite est gérée par `submit_human_turn`. Cf. `human_in_the_loop.md`.
+9. Appelle `context_builder.build_system_prompt(target, instance, activity, scene, character, knowledge_entries)`.
+10. Appelle `context_builder.build_messages(target, instance, exchange_history, current_round_event, whisper, mj_instruction, amorce=None)`.
+11. Appelle `context_builder.get_tools(activity)`.
+12. Appelle `provider.call(system_prompt, messages, tools=tools, tool_executor=_make_tool_executor(target))`.
+13. Parse via `parse_llm_json(raw_response)`.
+14. **Circuit breaker** : si parse échoue ou provider lève exception, incrémente `retry_counts[(round, target)]` et retry jusqu'à 3. Au 3e échec : publie SSE `activity.turn_skipped` et abandonne.
 14. Construit l'exchange :
 
 ```json
@@ -134,9 +139,11 @@ Endpoint : `GET /bus/activity/stream/{session_id}` — même mécanisme que `GET
 
 | Événement | Champs payload |
 |-----------|---------------|
-| `activity.started` | `session_id, players, round, starter, amorce, event` |
+| `activity.started` | `session_id, players, round, starter, amorce, event, human_player` |
+| `activity.resumed` | `session_id, run_id, players, round, exchanges, …, human_player` |
 | `activity.turn_complete` | `session_id, speaker, public, private, round` |
 | `activity.turn_skipped` | `session_id, speaker, reason` |
+| `activity.input_required` | `session_id, target, round` — bifurcation HITL, le serveur attend `submit_human_turn`. Cf. `human_in_the_loop.md`. |
 | `activity.round_changed` | `session_id, round, event, state` |
 | `activity.ended` | `session_id` |
 

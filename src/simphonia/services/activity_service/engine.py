@@ -9,7 +9,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
 
-from simphonia.core.errors import InstanceNotFound, SessionNotFound
+from simphonia.core.errors import (
+    EmptyTurn,
+    InstanceNotFound,
+    InvalidHumanSubmit,
+    SessionNotFound,
+)
 from simphonia.core.mcp import mcp_tool_hints
 from simphonia.services.activity_service.context_builder import (
     PRIVATE_FIELDS,
@@ -65,6 +70,10 @@ class SessionState:
     # par `context_builder.build_messages` à chaque give_turn pour que le LLM
     # reste conscient de ce qu'il a récemment ancré en mémoire (cohérence narrative).
     memorize_log:     dict[str, list[str]] = field(default_factory=dict)
+    # Human-in-the-loop : slug du joueur incarné par l'humain (cardinalité 0..1).
+    # `None` = activité 100% LLM. Cf. documents/human_in_the_loop.md.
+    human_player:        str | None = None
+    pending_human_input: dict | None = None
 
 
 _sessions: dict[str, SessionState] = {}
@@ -92,6 +101,33 @@ def _resolve_round_event(instance: dict, round_num: int) -> dict | None:
         except (TypeError, ValueError):
             pass
     return None
+
+
+def _resolve_human_player(char_svc, players: list[str], override: str | None) -> str | None:
+    """Détermine le joueur humain pour la session (cardinalité 0..1).
+
+    Règles :
+      1. Si `override` est fourni et résolvable vers un slug listé dans `players`,
+         il prime sur tout (override session).
+      2. Sinon, scan des participants : retourne le premier dont
+         `char_svc.get_type(slug) == "human"`. Warning si plusieurs trouvés.
+      3. Sinon, retourne `None` (activité 100% LLM).
+
+    Cf. documents/human_in_the_loop.md (Q3, Q12).
+    """
+    if override:
+        slug = char_svc.get_identifier(override) or override
+        if slug in players:
+            return slug
+        log.warning("[run] human_player=%r non listé dans les participants — ignoré", override)
+
+    humans = [p for p in players if char_svc.get_type(p) == "human"]
+    if not humans:
+        return None
+    if len(humans) > 1:
+        log.warning("[run] %d participant(s) ont type='human' — premier match retenu (%r)",
+                    len(humans), humans[0])
+    return humans[0]
 
 
 def _resolve_whisper(instance: dict, round_num: int, target: str, position: int) -> str | None:
@@ -281,6 +317,27 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
             "ts":          _now_iso(),
         })
 
+    # Bifurcation HITL — si la cible est le joueur humain de la session, on
+    # n'appelle pas le LLM. On flag `pending_human_input`, on publie SSE
+    # `activity.input_required`, et on attend `submit_human_turn`.
+    # Cf. documents/human_in_the_loop.md (Q5, Q11).
+    if slug == session.human_player:
+        session.pending_human_input = {
+            "round":  session.round,
+            "target": slug,
+            "ts":     _now_iso(),
+        }
+        _persist(session)  # persiste l'éventuelle instruction MJ ajoutée ci-dessus
+        _publish_sse(session_id, {
+            "type":       "activity.input_required",
+            "session_id": session_id,
+            "target":     slug,
+            "round":      session.round,
+        })
+        log.info("[give_turn] HITL — attente input humain pour %r round=%d",
+                 slug, session.round)
+        return
+
     # Rôle MCP dérivé du type du personnage — les tools exposés au LLM incarné
     # dépendent de `character.type` (player | npc | human), fallback "player".
     role = char_svc.get_type(slug)
@@ -377,7 +434,7 @@ def _do_give_turn(session_id: str, target: str, instruction: str | None) -> None
 # API publique — appelée par les commandes bus
 # ---------------------------------------------------------------------------
 
-def run(instance_id: str) -> dict:
+def run(instance_id: str, human_player: str | None = None) -> dict:
     from simphonia.services import (
         activity_storage, character_service, character_storage, provider_registry,
     )
@@ -437,6 +494,10 @@ def run(instance_id: str) -> dict:
         else:
             knowledge[player] = []
 
+    # Résolution du joueur humain (HITL — cardinalité 0..1).
+    # Override session prime sur le scan des fiches. Cf. human_in_the_loop.md.
+    human_slug = _resolve_human_player(char_svc, players, human_player)
+
     session_id = str(uuid.uuid4())
     run_id     = f"{instance_id}_{datetime.now(timezone.utc).strftime('%y%m%d_%H%M')}"
 
@@ -450,6 +511,7 @@ def run(instance_id: str) -> dict:
         "ts_started":    _now_iso(),
         "exchanges":     [],
         "mj":            [],
+        "human_player":  human_slug,  # persisté pour la reprise (Q12)
     })
 
     mj_mode = svc_instance.get("mj_mode", "human")
@@ -466,23 +528,25 @@ def run(instance_id: str) -> dict:
         system_schemas=system_schemas,
         provider_name=provider_name,
         mj_service=build_mj_service(mj_mode),
+        human_player=human_slug,
     )
     _sessions[session_id] = session
     _persist(session)
 
     event = _resolve_round_event(svc_instance, 1)
     payload = {
-        "session_id": session_id,
-        "players":    players,
-        "round":      1,
-        "starter":    svc_instance.get("starter"),
-        "amorce":     svc_instance.get("amorce"),
-        "event":      event,
-        "mj_mode":    mj_mode,
+        "session_id":   session_id,
+        "players":      players,
+        "round":        1,
+        "starter":      svc_instance.get("starter"),
+        "amorce":       svc_instance.get("amorce"),
+        "event":        event,
+        "mj_mode":      mj_mode,
+        "human_player": human_slug,
     }
     _publish_sse(session_id, {"type": "activity.started", **payload})
-    log.info("[run] session=%s instance=%r players=%s mj_mode=%s",
-             session_id, instance_id, players, mj_mode)
+    log.info("[run] session=%s instance=%r players=%s mj_mode=%s human_player=%r",
+             session_id, instance_id, players, mj_mode, human_slug)
 
     # Hook MJ : en mode autonomous, déclenche le briefing + premier give_turn
     _notify_mj_session_start(session)
@@ -552,7 +616,10 @@ def resume(run_id: str) -> dict:
 
     session_id = str(uuid.uuid4())
 
-    mj_mode = run_doc.get("mj_mode", "human")
+    mj_mode      = run_doc.get("mj_mode", "human")
+    # Restaure le joueur humain persisté au `run`. Cf. Q12 — pas de re-résolution
+    # au resume : l'override session a été figé au démarrage de l'activité.
+    human_slug   = run_doc.get("human_player")
 
     session = SessionState(
         session_id=session_id,
@@ -569,24 +636,27 @@ def resume(run_id: str) -> dict:
         round=current_round,
         state=RunState(run_doc.get("state", RunState.RUNNING)),
         exchange_history=list(existing_exchanges),
+        human_player=human_slug,
     )
     _sessions[session_id] = session
 
     event = _resolve_round_event(run_doc, current_round)
     payload = {
-        "session_id":  session_id,
-        "run_id":      run_id,
-        "players":     players,
-        "round":       current_round,
-        "starter":     run_doc.get("starter"),
-        "amorce":      run_doc.get("amorce"),
-        "event":       event,
-        "exchanges":   existing_exchanges,
-        "max_rounds":  run_doc.get("max_rounds"),
-        "state":       session.state,
+        "session_id":   session_id,
+        "run_id":       run_id,
+        "players":      players,
+        "round":        current_round,
+        "starter":      run_doc.get("starter"),
+        "amorce":       run_doc.get("amorce"),
+        "event":        event,
+        "exchanges":    existing_exchanges,
+        "max_rounds":   run_doc.get("max_rounds"),
+        "state":        session.state,
+        "human_player": human_slug,
     }
     _publish_sse(session_id, {"type": "activity.resumed", **payload})
-    log.info("[resume] session=%s run=%r players=%s round=%d", session_id, run_id, players, current_round)
+    log.info("[resume] session=%s run=%r players=%s round=%d human_player=%r",
+             session_id, run_id, players, current_round, human_slug)
 
     # Hook MJ : en mode autonomous, reconstruit son contexte et reprend la boucle
     _notify_mj_session_start(session)
@@ -603,6 +673,93 @@ def give_turn(session_id: str, target: str, instruction: str | None = None) -> d
     )
     t.start()
     return {"status": TURN_STATUS_PENDING, "session_id": session_id, "target": target}
+
+
+def submit_human_turn(
+    session_id: str,
+    target:     str,
+    to:         str,
+    talk:       str,
+    actions:    str,
+) -> dict:
+    """Intègre la saisie d'un joueur humain dans le flux d'activité.
+
+    Pipeline :
+      1. Validations (session running, target == human_player, pending non vide,
+         talk/actions pas vides simultanément).
+      2. Construction de l'exchange (PUBLIC rempli, PRIVATE vide,
+         `raw_response=None` — signature humaine vs LLM).
+      3. Append à `exchange_history` + `instance.exchanges`, persistance.
+      4. Reset `pending_human_input`.
+      5. Publication SSE `activity.turn_complete` (même flux que pour un LLM).
+      6. Hook MJ `on_turn_complete`.
+
+    Cf. documents/human_in_the_loop.md.
+    """
+    from simphonia.services import character_service
+
+    session = _get_session(session_id)
+    if session.state != RunState.RUNNING:
+        raise InvalidHumanSubmit(f"session not running (state={session.state!r})")
+
+    char_svc = character_service.get()
+    slug     = char_svc.get_identifier(target) or target
+
+    if slug != session.human_player:
+        raise InvalidHumanSubmit(
+            f"target {slug!r} is not the human player (expected {session.human_player!r})"
+        )
+    if session.pending_human_input is None:
+        raise InvalidHumanSubmit("no pending human input — give_turn was not called")
+
+    talk_str    = (talk    or "").strip()
+    actions_str = (actions or "").strip()
+    if not talk_str and not actions_str:
+        raise EmptyTurn()
+
+    # Wrapping str → list[str] pour rester aligné avec le schéma exchange.
+    public = {
+        "to":      to or "all",
+        "talk":    [talk_str]    if talk_str    else [],
+        "actions": [actions_str] if actions_str else [],
+        "body":    "",
+        "mood":    "",
+    }
+    exchange = {
+        "from":         slug,
+        "round":        session.round,
+        "ts":           _now_iso(),
+        "raw_response": None,  # signe la provenance humaine
+        "public":       public,
+        "private":      {},
+    }
+    session.exchange_history.append(exchange)
+    session.instance.setdefault("exchanges", []).append(exchange)
+    session.pending_human_input = None
+    _persist(session)
+    _publish_messages("activity", slug, exchange)
+
+    log.info("[submit_human_turn] %r round=%d to=%r talk=%r",
+             slug, session.round, to, talk_str[:50])
+
+    _publish_sse(session_id, {
+        "type":       "activity.turn_complete",
+        "session_id": session_id,
+        "speaker":    slug,
+        "round":      session.round,
+        "public":     public,
+        "private":    {},
+        "whisper":    None,
+    })
+
+    _notify_mj_turn_complete(session, exchange)
+
+    return {
+        "status":     "ok",
+        "session_id": session_id,
+        "speaker":    slug,
+        "round":      session.round,
+    }
 
 
 def next_round(session_id: str) -> dict:
