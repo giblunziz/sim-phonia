@@ -9,6 +9,7 @@
 data/
 logs/
 output/
+secrets/
 
 # Python
 __pycache__/
