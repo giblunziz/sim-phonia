@@ -2,7 +2,11 @@ providers:
   gemma4:
     protocol: ollama
     url: http://localhost:11434/api/chat
+
+#    model: simphonia-light:v2.0
+
     model: simphonia.v1:latest
+#    model: simphonia:light
 #    model: gemma4:26b
 #    model: gemma4:e4b
     max_tokens: 8512
@@ -81,3 +85,34 @@ services:
     model: "gemma4-original"
     output_dir: output
     max_retries: 3            # retry par cellule si le provider renvoie une réponse vide
+
+  photo:
+    strategy: z_image_turbo
+    output_dir: "./data/photo"
+    database_uri: ${MONGO_URI}
+    database_name: ${MONGO_DATABASE}
+    collection: photos
+    style_prefix:
+      take_shoot: "Photographie réaliste, cadrage soigné, lumière naturelle."
+      take_selfy: "Photo selfie réaliste, prise au smartphone, angle naturel. Lumière naturelle."
+    subject_template: "{_id}, {gender} de {age} ans, {appearance.build}, yeux {appearance.eyes}, cheveux {appearance.hair}, accessoires {appearance.accessories}"
+    strategies:
+      z_image_turbo:
+        # `model_id` accepte un repo HF (`Tongyi-MAI/Z-Image-Turbo`) OU un path
+        # local cloné. On pointe sur le clone local pour éviter le download
+        # depuis Python (firewall / proxy pouvant bloquer huggingface_hub).
+        # Pour cloner : `cd ./models && git lfs install && git clone https://huggingface.co/Tongyi-MAI/Z-Image-Turbo`
+        model_id: "./models/Z-Image-Turbo"
+        steps: 12                # validé dans le workflow ComfyUI de référence (8 NFE)
+        guidance_scale: 1.0     # IMPÉRATIF : Z-Image Turbo est distillé CFG-free.
+                                # Le default ZImagePipeline est 5.0 — détruit la qualité.
+        width: 1024
+        height: 1024
+        seed: null              # null | -1 = random ; entier = reproductible (debug)
+        device: cuda
+        dtype: bfloat16
+        cpu_offload: true       # garde le modèle en RAM, transfère par couches
+                                # en VRAM à la volée. ~50% moins de VRAM, ~30%
+                                # plus lent, mais permet la cohabitation avec
+                                # Ollama. Mettre à `false` si Z-Image est seul
+                                # sur le GPU pour vitesse max.

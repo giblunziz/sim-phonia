@@ -293,6 +293,27 @@ select:disabled, textarea:disabled, .reply-input:disabled {
 .message-from .message-speaker { color: var(--accent); }
 .message-to   .message-speaker { color: var(--accent-2); }
 
+/* Photo (bulle "SMS reçu") — image en place de texte */
+.message-photo {
+  padding: 0.5rem;
+  max-width: 60%;
+}
+.message-photo .photo-link {
+  display: block;
+  line-height: 0;
+}
+.message-photo .photo-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: calc(var(--radius) - 4px);
+  cursor: zoom-in;
+  transition: transform 120ms ease;
+}
+.message-photo .photo-image:hover {
+  transform: scale(1.01);
+}
+
 .message-text {
   font-size: 0.93rem;
   white-space: pre-wrap;

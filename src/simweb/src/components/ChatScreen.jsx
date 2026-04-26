@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { chatReply, chatStop, openEventStream } from '../api/simphonia.js';
+import { chatReply, chatStop, openEventStream, openPhotoStream, photoUrl } from '../api/simphonia.js';
+import PhotoMessage from './PhotoMessage.jsx';
 
 function Message({ speaker, text, isFrom }) {
   return (
@@ -31,6 +32,13 @@ export default function ChatScreen({ session, onClose }) {
     ]);
   };
 
+  const addPhoto = (speaker, url, photoType, isFrom) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: idRef.current++, speaker, photoUrl: url, photoType, isFrom },
+    ]);
+  };
+
   // SSE pour le mode autonome (human=false)
   useEffect(() => {
     if (human) return;
@@ -44,6 +52,25 @@ export default function ChatScreen({ session, onClose }) {
     es.onerror = () => es.close();
     return () => es.close();
   }, [session_id, human, fromChar]);
+
+  // SSE photo : actif aussi en mode humain (le LLM-joueur peut prendre des
+  // photos même quand l'utilisateur tient le rôle d'un des deux personnages).
+  useEffect(() => {
+    const es = openPhotoStream(session_id);
+    es.onmessage = (e) => {
+      const event = JSON.parse(e.data);
+      if (event.type === 'photo.published') {
+        addPhoto(
+          event.from_char,
+          photoUrl(event.photo_id),
+          event.photo_type,
+          event.from_char === fromChar,
+        );
+      }
+    };
+    es.onerror = () => es.close();
+    return () => es.close();
+  }, [session_id, fromChar]);
 
   // Scroll automatique vers le bas
   useEffect(() => {
@@ -102,9 +129,19 @@ export default function ChatScreen({ session, onClose }) {
       </header>
 
       <div className="messages-area">
-        {messages.map((m) => (
-          <Message key={m.id} speaker={m.speaker} text={m.text} isFrom={m.isFrom} />
-        ))}
+        {messages.map((m) =>
+          m.photoUrl ? (
+            <PhotoMessage
+              key={m.id}
+              speaker={m.speaker}
+              url={m.photoUrl}
+              photoType={m.photoType}
+              isFrom={m.isFrom}
+            />
+          ) : (
+            <Message key={m.id} speaker={m.speaker} text={m.text} isFrom={m.isFrom} />
+          ),
+        )}
         {loading && (
           <div className="typing-indicator">
             <span>{toChar} réfléchit</span>

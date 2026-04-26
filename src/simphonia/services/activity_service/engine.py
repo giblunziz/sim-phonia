@@ -186,6 +186,28 @@ def _make_tool_executor(from_char: str, session: SessionState):
             session.memorize_log.setdefault(from_char, []).append(markdown)
             return markdown
 
+        if name in ("take_shoot", "take_selfy"):
+            from simphonia.commands.photo import format_photo_ack_markdown
+            from simphonia.services import photo_service
+            markdown_arg = args.get("markdown", "")
+            activity_slug = session.instance.get("activity") or None
+            if name == "take_shoot":
+                result = photo_service.get().take_shoot(
+                    markdown=markdown_arg,
+                    from_char=from_char,
+                    session_id=session.run_id,
+                    activity_id=activity_slug,
+                )
+                return format_photo_ack_markdown(result, type_="shoot")
+            else:
+                result = photo_service.get().take_selfy(
+                    markdown=markdown_arg,
+                    from_char=from_char,
+                    session_id=session.run_id,
+                    activity_id=activity_slug,
+                )
+                return format_photo_ack_markdown(result, type_="selfy")
+
         return f"Outil inconnu : {name}"
     return execute
 
@@ -196,6 +218,91 @@ def _persist(session: SessionState) -> None:
         activity_storage.get().put_run(session.run_id, session.instance)
     except Exception as exc:
         log.warning("[persist] échec upsert run %r : %s", session.run_id, exc)
+
+
+# ---------------------------------------------------------------------------
+#  Persistance des photos dans la timeline d'un run
+# ---------------------------------------------------------------------------
+
+def append_photo_to_run(run_id: str, photo_entry: dict) -> None:
+    """Append une entrée photo dans la timeline d'un run (`exchanges[]`).
+
+    Marqueur d'entrée : `_photo: True` — discriminant côté rendu (frontend
+    et `engine.resume`). Le run_id est la clé Mongo (`session.run_id`), pas
+    l'UUID éphémère `session.session_id`.
+
+    Si une session est active pour ce run, on append dans `session.instance`
+    en mémoire puis on `_persist` (cas courant : la photo est générée pendant
+    le tour qui l'a déclenchée). Sinon, on lit/append/put via `activity_storage`
+    directement (cas où la session a été fermée entre `take_selfy` et le
+    `publish` qui suit la génération).
+    """
+    matching_session = next(
+        (s for s in _sessions.values() if s.run_id == run_id),
+        None,
+    )
+
+    if matching_session is not None:
+        if "round" not in photo_entry:
+            current_round = matching_session.instance.get("current_round")
+            if current_round:
+                photo_entry["round"] = current_round
+        matching_session.instance.setdefault("exchanges", []).append(photo_entry)
+        _persist(matching_session)
+        return
+
+    # Fallback : pas de session active → storage direct.
+    try:
+        from simphonia.services import activity_storage
+        run = activity_storage.get().get_run(run_id)
+    except Exception as exc:
+        log.warning("[append_photo_to_run] storage fail for %s: %s", run_id, exc)
+        return
+    if run is None:
+        return  # pas un run connu (probablement un session_id chat synthétique)
+    if "round" not in photo_entry:
+        current_round = run.get("current_round")
+        if current_round:
+            photo_entry["round"] = current_round
+    run.setdefault("exchanges", []).append(photo_entry)
+    try:
+        activity_storage.get().put_run(run_id, run)
+    except Exception as exc:
+        log.warning("[append_photo_to_run] put_run fail for %s: %s", run_id, exc)
+
+
+def _photo_to_activity_runs(payload: dict) -> None:
+    """Listener bus `photo` — persiste l'entrée dans `activity_runs.exchanges[]`.
+
+    Filtre : seuls les payloads `publish` (présence de `url`) sont traités.
+    Les payloads `take_*` (qui contiennent `markdown` et pas `url`) sont
+    ignorés. Si le `session_id` du payload n'est pas un `run_id` connu
+    (cas du chat avec session_id synthétique), `append_photo_to_run` no-op.
+    """
+    if "url" not in payload:
+        return
+    run_id = payload.get("session_id")
+    if not run_id:
+        return
+    photo_entry = {
+        "_photo":     True,
+        "photo_id":   payload.get("photo_id"),
+        "from":       payload.get("from_char"),
+        "photo_type": payload.get("type"),
+        "url":        payload.get("url"),
+        "ts":         _now_iso(),
+    }
+    append_photo_to_run(run_id, photo_entry)
+
+
+def subscribe_photo_to_activity_runs() -> None:
+    """Branche `_photo_to_activity_runs` sur le bus `photo`.
+
+    À appeler une fois au boot, après le discovery (le bus `photo` doit
+    exister). Cohérent avec `subscribe_photo_publish_to_sse` côté HTTP.
+    """
+    from simphonia.core import default_registry
+    default_registry().get("photo").subscribe(_photo_to_activity_runs)
 
 
 def _publish_sse(session_id: str, event: dict) -> None:

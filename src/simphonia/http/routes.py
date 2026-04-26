@@ -1,5 +1,7 @@
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from simphonia.core import BusNotFound, CommandNotFound, DispatchError, default_registry
 from simphonia.http import sse
@@ -66,6 +68,57 @@ async def stream_chat_events(session_id: str) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/bus/photo/stream/{session_id}")
+async def stream_photo_events(session_id: str) -> StreamingResponse:
+    """SSE des événements `photo.published` pour la session courante.
+
+    Le listener `sse._photo_publish_to_sse` (branché au boot) capture les
+    `dispatch("publish")` du bus `photo` et les route ici par `session_id`.
+    Le client simweb reçoit `{type: "photo.published", photo_id, from_char,
+    photo_type, url}` quand une photo qu'il a déclenchée est prête.
+    """
+    return StreamingResponse(
+        sse.subscribe(session_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.get("/photos/{photo_id}")
+def serve_photo(photo_id: str) -> FileResponse:
+    """Sert le binaire PNG d'une photo générée.
+
+    Sécurité v1 : aucune ACL — tout client connaissant le `photo_id`
+    (UUID v4) peut récupérer le fichier. C'est acceptable v1 vu que
+    le `photo_id` n'est exposé que via le SSE de la session émettrice.
+    L'ACL `from_char` matchant la session courante sera ajoutée ultérieurement
+    si nécessaire (cf. `documents/photo_service.md` § 7).
+    """
+    from simphonia.services import photo_service
+    try:
+        doc = photo_service.get().get_photo(photo_id)
+    except RuntimeError as exc:
+        # photo_service pas configuré (pas de Mongo) → 503
+        raise HTTPException(status_code=503, detail=_error("ServiceUnavailable", str(exc))) from exc
+    if doc is None:
+        raise HTTPException(status_code=404, detail=_error("PhotoNotFound", f"photo_id={photo_id}"))
+    if doc.get("status") != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail=_error(
+                "PhotoNotReady",
+                f"photo_id={photo_id} status={doc.get('status')}",
+            ),
+        )
+    file_path = doc.get("file_path")
+    if not file_path or not Path(file_path).exists():
+        raise HTTPException(
+            status_code=410,
+            detail=_error("PhotoFileMissing", f"file_path={file_path}"),
+        )
+    return FileResponse(path=file_path, media_type="image/png", filename=f"{photo_id}.png")
 
 
 def _error(type_: str, message: str) -> dict[str, dict[str, str]]:

@@ -4,8 +4,11 @@ import {
   activityResume, activityGiveTurn, activityNextRound, activityEnd,
   activitySubmitHumanTurn,
   openActivityStream,
+  openPhotoStream,
+  photoUrl,
   mjNextTurn,
 } from '../../api/simphonia.js';
+import PhotoMessage from '../PhotoMessage.jsx';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -436,6 +439,35 @@ function MJDashboard({ sessionData, onClose }) {
     return () => es.close();
   }, [session_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // SSE photo : routage par `run_id` (c'est ce que `activity_engine._make_tool_executor`
+  // passe en `session_id` à `photo_service.take_selfy/take_shoot`). Les photos
+  // s'insèrent dans le flux des `exchanges` comme des entrées `_photo: true`.
+  useEffect(() => {
+    if (ended || !run_id) return;
+    const es = openPhotoStream(run_id);
+    es.onmessage = (e) => {
+      try {
+        const evt = JSON.parse(e.data);
+        if (evt.type === 'keepalive') return;
+        if (evt.type === 'photo.published') {
+          setExchanges((prev) => [
+            ...prev,
+            {
+              _photo:     true,
+              photo_id:   evt.photo_id,
+              from:       evt.from_char,
+              photo_type: evt.photo_type,
+              url:        photoUrl(evt.photo_id),
+              ts:         new Date().toISOString(),
+            },
+          ]);
+        }
+      } catch { /* JSON parse error ignoré */ }
+    };
+    es.onerror = () => es.close();
+    return () => es.close();
+  }, [run_id, ended]);
+
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [exchanges]);
@@ -605,7 +637,18 @@ function MJDashboard({ sessionData, onClose }) {
             : exchanges.map((ex, i) =>
                 ex._skipped
                   ? <SkippedCard key={i} event={ex} />
-                  : <ExchangeCard key={i} exchange={ex} />
+                  : ex._photo
+                    ? (
+                      <div key={i} style={{ padding: '0.5rem 1rem' }}>
+                        <PhotoMessage
+                          speaker={ex.from}
+                          url={ex.url}
+                          photoType={ex.photo_type}
+                          isFrom={false}
+                        />
+                      </div>
+                    )
+                    : <ExchangeCard key={i} exchange={ex} />
               )
           }
         </div>

@@ -31,6 +31,7 @@ Cartographie des documents de spéc, d'analyse et de synthèse (mon RAG projet �
 - [tools_service.md](./documents/tools_service.md) — cahier des charges du `tools_service` (atelier utilitaire one-shot, double boucle source×subject, registre mongo task_collection, outputs fichiers .txt)
 - [shadow_storage.md](./documents/shadow_storage.md) — cahier des charges du `shadow_storage` : capture passive du subconscient des joueurs via bus `messages` + observer pattern, persistance Mongo + ChromaDB, panneau **Tobias > Subconscient** côté simweb
 - [human_in_the_loop.md](./documents/human_in_the_loop.md) — mode HITL transverse : participant désigné comme humain dans une activité, bifurcation `give_turn` + commande `submit_human_turn` + form simweb (cardinalité 0..1)
+- [photo_service.md](./documents/photo_service.md) — cahier des charges du `photo_service` (génération d'images via Z-Image Turbo en pipeline `diffusers`, bus `photo`, commandes `take_shoot`/`take_selfy`, réponse LLM en markdown sectionné, `subject_template` schemaless pour cohérence visuelle inter-selfies)
 
 ### Études & synthèses
 

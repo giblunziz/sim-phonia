@@ -123,11 +123,80 @@ services:
 
 **Préalables** : aucun bloquant — `character.type` existe déjà, `provider_registry` aussi. Chantier self-contained, ~1 après-midi.
 
+### 🔁 Tool spam sur retry LLM invalide
+
+Quand le parser JSON invalide une réponse LLM, le moteur `activity_engine` retry l'appel LLM. Si le LLM rappelle ses tools (`recall`, `memorize`, `take_shoot`, `take_selfy`...) dans la nouvelle tentative, ils sont **ré-exécutés**. Observé en prod 2026-04-26 : 5 selfies générés alors que le LLM ne voulait en faire qu'1, à cause d'une réponse invalide qui a déclenché 5 retries × 1 selfy par retry.
+
+**Fix proposé** : cacher le dernier `result` de chaque tool call par hash des arguments sur la durée du tour LLM (state attaché à `SessionState` ou au `tool_executor`). Sur un appel identique en retry, ré-injecter le résultat caché au lieu de ré-exécuter. Invalidation du cache à la fin du tour (succès ou abandon).
+
+**Scope** : `activity_engine` (et probablement `chat_service` aussi). Pas dans `tools_service` (qui n'a pas de retry). Aucun lien fonctionnel avec `photo_service` — c'est un bug d'orchestration LLM, qui se manifeste juste plus visiblement avec photo_service à cause du coût GPU + Mongo + filesystem par appel.
+
+**Pas critique** : juste consomme du GPU/Mongo inutilement et peut générer des doublons visibles dans les flux. À traiter quand la régularité du parser JSON aura été stabilisée.
+
+### 📷 `photo_service` — évolutions post-v1
+
+Listées dans `documents/photo_service.md` § *Évolutions prévues*. Toutes sont YAGNI v1.
+
+- **Provider `comfyui_http`** *(prio 1 post-v1)* — voie alternative quand le LLM-joueur (gemma4:26b ou similaire) sature la VRAM et empêche la cohabitation directe avec Z-Image dans le même process. ComfyUI tourne en process séparé (`--listen 127.0.0.1 --port 8188`), gère sa VRAM indépendamment, et `photo_service` ajoute un provider qui POST le workflow JSON ComfyUI (déjà disponible : `X:\ComfyUI\user\default\workflows\image_z_image_turbo.json`) puis polle `/history/<prompt_id>` jusqu'à completion. Le pattern strategy est en place — c'est une nouvelle implémentation `PhotoService`, pas un refactor. La séparation des process règle aussi proprement le problème de gestion VRAM concurrente. **Trade-off** : dépendance externe ComfyUI à lancer en plus de simphonia.
+- **Option `cpu_offload_mode: sequential`** — quick win pour cohabitation directe (sans ComfyUI séparé). `pipe.enable_sequential_cpu_offload()` au lieu de `enable_model_cpu_offload()`. ~2-3 GB VRAM Z-Image au lieu de ~6, mais ~15-25s par photo. Implémentation triviale (5 lignes), à exposer en config si l'utilisateur veut tolérer la lenteur pour garder un setup simple.
+- **`photo_appearance` dans la fiche perso** : champ optionnel orienté photo, exploité par le `subject_template` (clé supplémentaire). Décide si on enrichit la fiche ou si on garde le `subject_template` actuel suffisant.
+- **Cascade `after` `take_shoot` / `take_selfy`** : déclenche un `photo_analyzer` (VLM type Gemma3-Vision / LLaVA), produit une description sémantique, injectée dans `shadow_memory` sur le canal du joueur émetteur. Tobias peut exploiter la photo dans le `recall`. Préalable : H5.c `shadow_memory_service` + cascades #11/#12.
+- **Diffusion aux autres joueurs présents** : règle de visibilité par activité (qui voit quoi), restitution simweb identique. Préalable : v1 stable + concept `Scene` (W3) à clarifier.
+- **Réinjection multimodale dans le contexte LLM-joueur** : pour les modèles vision-capable, ré-injecter l'image au tour suivant. Préalable : capability flag `vision` sur le provider/model (cf. H6 capability flag `tool_use`).
+- **Provider `ComfyUIProvider`** : workflows complexes (LoRAs perso fine-tunés sur la fiche, ControlNet pour pose imposée, upscaling chaîné). À envisager si Z-Image Turbo seul ne suffit pas pour certaines scènes.
+- **Variations / édition** : `take_variation(photo_id)`, retouche locale.
+
 ## FROZEN
 
 _(vide)_
 
 ## DONE
+
+### 2026-04-26 — 📷 `photo_service` v1 — Z-Image Turbo, MCP, async, persistance, SSE simweb (H7 complet)
+
+Cahier des charges complet dans [`documents/photo_service.md`](./documents/photo_service.md). 5 lots livrés en une session marathon, validation utilisateur sur la chaîne bout en bout (`take_selfy` + `take_shoot`, en chat et en activity, persistance + reprise via historique).
+
+**H7.1 — Squelette + config + dépendances** : arbo `services/photo_service/` (ABC `PhotoService` + factory `build_photo_service` avec import dynamique des stratégies + singleton `init()`/`get()`), section YAML `services.photo` avec `strategies.z_image_turbo` imbriquée, dépendances `diffusers @ git+...` (pas en PyPI stable, support `ZImagePipeline` dev), `pillow`, `accelerate`, `torch` dans `pyproject.toml` ET `requirements.txt`.
+
+**H7.2 — Helpers schemaless réutilisables** :
+- `subject_template.py` : `resolve_subject_template(template, character)` — parsing placeholders `{path.dotted}`, walk schemaless sur dict imbriqué, **segment-removal sur virgule** pour les non-résolus.
+- `markdown_io.py` : `parse_sections` / `render_sections` / `merge_with_overrides`.
+- 33 tests unitaires dédiés, tous verts. 233/233 globalement.
+
+**H7.3 — Stratégie `ZImageTurboPhotoService`** : pipeline `diffusers.ZImagePipeline` avec **lazy load thread-safe**. Helpers métier `build_shoot_prompt` / `build_selfy_prompt` testables sans GPU. Smoke test autonome `scripts/test_photo_generate.py`.
+
+**H7.4 — Bus `photo` + commandes MCP + persistance Mongo + génération background + tool_executor** :
+- `commands/photo.py` : 4 commandes (`take_shoot` mcp player, `take_selfy` mcp player, `publish` interne, `get` interne) + `register_mcp_group` (intro/outro/reminder) + helper `format_photo_ack_markdown`.
+- Mongo collection `photos` avec persistance lazy (connexion au 1er accès) ; statuts `queued` / `completed` / `failed` avec `error` capturé en cas d'échec.
+- Filesystem `<output_dir>/<from_char>/<photo_id>.png`, sous-dossier créé à la volée.
+- **Génération background** via `ThreadPoolExecutor` 1-worker (sérialise les accès GPU pour éviter l'OOM avec deux générations parallèles).
+- Mode async hybride : ack synchrone `{status: queued, photo_id}` en quelques ms, puis dispatch `photo/publish` quand l'image est prête.
+- Extension du **tool_executor** côté `chat_service.default_strategy` (`session_id` ← `state.session_id`) et `activity_service.engine` (`session_id` ← `session.run_id`, `activity_id` ← slug d'activité).
+- Smoke test `scripts/test_photo_lot4.py` valide la chaîne bout en bout (ack → Mongo queued → polling completed → fichier sur disque → événement bus reçu) sur 4 personnages différents.
+
+**H7.5 — SSE + simweb + persistance `activity_runs`** :
+- Worker propage `{photo_id, session_id, from_char, type, url}` dans le payload `publish`.
+- Bridge `_photo_publish_to_sse` dans `http/sse.py` filtre les events `publish` et route par `session_id` vers les abonnés SSE.
+- Bridge `_photo_to_activity_runs` dans `activity_service/engine.py` : append une entrée `{_photo: true, ...}` dans `instance.exchanges[]` avec le `current_round` enrichi ; cas session active (in-memory + persist) ET cas session fermée (storage direct) ; **no-op silencieux si le `session_id` n'est pas un run connu** (cas chat).
+- Endpoints HTTP : `GET /bus/photo/stream/{session_id}` (SSE), `GET /photos/{photo_id}` (sert le PNG avec gestion 404/409/410).
+- simweb : `openPhotoStream` + `photoUrl` dans `api/simphonia.js` ; proxy `/photos` ajouté dans `vite.config.js` ; composant `PhotoMessage.jsx` (bulle SMS) ; câblage dans `ChatScreen.jsx` (`session_id` chat) **et** `ActivityDashboardPanel.jsx` (`run_id` activity) ; CSS `.message-photo` / `.photo-image` (hover zoom subtil).
+- Au resume d'une activité, les photos historiques remontent dans le flux `exchanges` à leur position chronologique (le rendu fait le dispatch `ex._photo` automatiquement).
+
+**Décisions techniques actées au passage** :
+- `model_id` et `output_dir` peuvent être relatifs au projet (`./models/...`, `./data/...`) — résolution par rapport au dossier contenant `pyproject.toml`, pas au cwd Python (qui dépend de l'IDE / d'uvicorn / de scripts/).
+- `model_id` accepte un repo HF OU un path local cloné — bascule sur `./models/Z-Image-Turbo` (clone manuel) car HF Hub bloqué côté Python sur le réseau utilisateur (firewall/proxy MITM coupant les TLS Python alors que le navigateur passe).
+- **`guidance_scale=1.0` impératif** : le default `ZImagePipeline` est 5.0, mais Z-Image Turbo est un modèle distillé **CFG-free** — toute guidance > 1 dégrade massivement la qualité (flou, désaturation, perte des yeux). Validé empiriquement.
+- **`steps=8` confirmé** (workflow ComfyUI de référence) ; le scheduler `FlowMatchEulerDiscreteScheduler` a `shift=3.0` natif côté config modèle (le `ModelSamplingAuraFlow(shift=3)` ComfyUI est appliqué automatiquement par `diffusers`).
+- Option `cpu_offload: true` ajoutée pour cohabitation avec Ollama en VRAM (32 GB 5090 partagés DiT + LLM tiré par le tool_executor) — modèle reste en RAM, transfert par couches en VRAM, ~50 % VRAM en moins, ~30-50 % temps en plus.
+- `publish_command(photo_id, **payload)` permissif côté kwargs — la valeur sémantique du dispatch est transportée aux listeners via `_notify_listeners(payload)`, le retour de la commande est secondaire.
+- Compatible RTX 5090 + CUDA 13.1 + torch cu128 + Blackwell sm_120.
+
+**Validations utilisateur 2026-04-26** :
+- Smoke test Lot 3 : photo d'Aurore en clair de lune, qualité visuelle au niveau ComfyUI.
+- Smoke test Lot 4 : 4 photos générées pour 4 perso différents (`aurore`, `isabelle`, `prisca`, `zoe`), persistance Mongo + filesystem + dispatch bus OK.
+- Lot 5 chat : photos en push SSE temps réel dans `ChatScreen`.
+- Lot 5 activity : photos en push SSE temps réel dans `ActivityDashboardPanel` ; au resume, photos historiques remontent à leur place chronologique.
+- `take_shoot` validé sur scène (croquis + carnet + feutres + café) — LLM libre sur toutes les sections, asymétrie voulue avec `take_selfy` (cohérence visuelle service-side).
 
 ### 2026-04-25 — 🧑 Mode `human-in-the-loop` — joueur humain dans une activité
 

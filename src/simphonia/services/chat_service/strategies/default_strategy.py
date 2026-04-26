@@ -144,6 +144,33 @@ class DefaultChatService(ChatService):
                     state.memorize_log.setdefault(from_char, []).append(markdown)
                 return markdown
 
+            if name in ("take_shoot", "take_selfy"):
+                # On utilise le `session_id` réel du DialogueState pour que le
+                # listener bus → SSE puisse router le `photo.published` event
+                # vers le client simweb abonné à `/bus/photo/stream/{session_id}`.
+                # Fallback synthétique si appelé hors session (ne devrait pas
+                # arriver via le flow normal chat_service).
+                from simphonia.commands.photo import format_photo_ack_markdown
+                from simphonia.services import photo_service
+                markdown_arg = args.get("markdown", "")
+                effective_session_id = state.session_id if state is not None else f"chat-{from_char}"
+                if name == "take_shoot":
+                    result = photo_service.get().take_shoot(
+                        markdown=markdown_arg,
+                        from_char=from_char,
+                        session_id=effective_session_id,
+                        activity_id=None,
+                    )
+                    return format_photo_ack_markdown(result, type_="shoot")
+                else:
+                    result = photo_service.get().take_selfy(
+                        markdown=markdown_arg,
+                        from_char=from_char,
+                        session_id=effective_session_id,
+                        activity_id=None,
+                    )
+                    return format_photo_ack_markdown(result, type_="selfy")
+
             return f"Outil inconnu : {name}"
         return execute
 

@@ -114,6 +114,20 @@ export function openEventStream(sessionId) {
   return new EventSource(`${BASE}/chat/stream/${sessionId}`);
 }
 
+// ── photo (génération d'images Z-Image Turbo) ─────────────────────────────────
+
+export function openPhotoStream(sessionId) {
+  // Reçoit les events `{type: "photo.published", photo_id, from_char,
+  // photo_type, url}` quand une photo prise dans cette session est prête.
+  return new EventSource(`${BASE}/photo/stream/${sessionId}`);
+}
+
+// URL servable de l'image — `<img src={photoUrl(photo_id)}/>`. Le path est
+// servi par simphonia (FastAPI) via `GET /photos/{photo_id}`.
+export function photoUrl(photoId) {
+  return `/photos/${photoId}`;
+}
+
 // ── activity engine ───────────────────────────────────────────────────────────
 
 export const activityRun       = (instance_id, human_player = null) => dispatch('activity', 'run',        { instance_id, human_player });

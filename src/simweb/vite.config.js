@@ -7,6 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/bus': 'http://localhost:8000',
+      '/photos': 'http://localhost:8000',
     },
   },
 });
